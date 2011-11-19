@@ -203,6 +203,7 @@ void MAX3421E::powerOn()
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
     regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
+    Serial.println("End powerOn");
 }
 /* MAX3421 state change task and interrupt handler */
 byte MAX3421E::Task( void )
