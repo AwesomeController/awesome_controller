@@ -20,7 +20,7 @@ volatile int index = 0;
 volatile int counter = 0;
 
 //Input is buttons[i]
-int buttons[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+int buttons[] = {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0};
 int buttons_feedback[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 //Output is on pin Data to snes
@@ -45,6 +45,14 @@ void loop() {
       Serial.println(buttons_feedback[i]);
       }
     counter = 0;
+  }
+  
+  if (32 == counter) {
+    //cycling A
+    buttons[7] = 0;
+  }
+  if (0 == counter) {
+    buttons[7] = 1;
   }
 }
 
