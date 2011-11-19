@@ -1,18 +1,22 @@
 #include <SPI.h>
 #include "ps3_usb.h"
 
-int clock = 2;
-int latch = 3;
+int latch = 2;
+int clock = 3;
 int data = 4;
 
+volatile int index;
 boolean buttons[16];
 
 PS3_USB PS3Game;
 
 void setup() {
-  pinMode(clock, OUTPUT);
-  pinMode(latch, OUTPUT);
-  pinMode(data, INPUT);
+  attachInterrupt(0, resetButtons, RISING);
+  attachInterrupt(1, snesKeyDown, RISING);
+  
+  pinMode(clock, INPUT);
+  pinMode(latch, INPUT);
+  pinMode(data, OUTPUT);
   
   digitalWrite(clock, HIGH);
   
@@ -79,4 +83,17 @@ void readControllerState() {
       }
     }
   }
+}
+
+void snesKeyDown(){
+  if (buttons[index] == 0) {
+    PORTD |= B00010000; //turns signal to high
+  } else {
+    PORTD &= B11101111; //turns signal to low
+  }
+  index++;
+}
+
+void resetButtons(){
+  index = 0;
 }
