@@ -5,7 +5,7 @@ int clock = 2;
 int latch = 3;
 int data = 4;
 
-int buttons[16];
+boolean buttons[16];
 
 PS3_USB PS3Game;
 
@@ -49,12 +49,33 @@ void loop() {
 }
 
 void readControllerState() {
-  Serial.println("Reading controller state");
   PS3Game.task();
   if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
-    if(PS3Game.buttonChanged()){
-      if(PS3Game.buttonPressed(buLeft)) {
-        Serial.println("Pressed left!");
+    if (PS3Game.buttonChanged()){
+      buttons[0] = PS3Game.buttonPressed(buCross);
+      buttons[1] = PS3Game.buttonPressed(buSquare);
+      buttons[2] = PS3Game.buttonPressed(buSelect);
+      buttons[3] = PS3Game.buttonPressed(buStart);
+      buttons[4] = PS3Game.buttonPressed(buUp);
+      buttons[5] = PS3Game.buttonPressed(buDown);
+      buttons[6] = PS3Game.buttonPressed(buLeft);
+      buttons[7] = PS3Game.buttonPressed(buRight);
+      buttons[8] = PS3Game.buttonPressed(buCircle);
+      buttons[9] = PS3Game.buttonPressed(buTriangle);
+      buttons[10] = PS3Game.buttonPressed(buL1);
+      buttons[11] = PS3Game.buttonPressed(buR1);
+      buttons[12] = false;
+      buttons[13] = false;
+      buttons[14] = false;
+      buttons[15] = false;
+      
+      int len = sizeof(buttons)/sizeof(boolean);
+
+      for (int i = 0; i < len; i++){
+        Serial.print("Button #");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println((int)buttons[i]);
       }
     }
   }
