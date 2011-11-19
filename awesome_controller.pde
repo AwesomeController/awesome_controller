@@ -1,9 +1,5 @@
-/*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
- 
-  This example code is in the public domain.
- */
+#include <SPI.h>
+#include "ps3_usb.h"
 
 int clock = 2;
 int latch = 3;
