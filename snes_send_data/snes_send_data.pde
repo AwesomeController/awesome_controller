@@ -16,16 +16,17 @@ int clock = 3;
 int data = 4;
 int led = 13;
 
-int state = HIGH;
-int index = 0;
+volatile int index = 0;
+volatile int counter = 0;
 
 //Input is buttons[i]
-int buttons[15];
-int butttons[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+int buttons[] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+int buttons_feedback[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 //Output is on pin Data to snes
 
 void setup() {
+  Serial.begin(9600);
   attachInterrupt(0, resetButtons, RISING);
   attachInterrupt(1, snesKeyDown, RISING);
   //attachInterrupt(1, snesKeyUp, RISING);
@@ -34,21 +35,39 @@ void setup() {
   pinMode(latch, INPUT);
   pinMode(data, OUTPUT);
   //Intialize states
-  digitalWrite(data, state);
 }
 
 void loop() {
+  if (counter > 64) {
+      for (int i=0; i < 16; i++) {
+      Serial.print(i);
+      Serial.print(": ");
+      Serial.println(buttons_feedback[i]);
+      }
+    counter = 0;
+  }
 }
 
 void snesKeyDown() {
-  if (buttons[index] == 1) {
-    PORTD |= B00010000;
+  //Serial.println("yay, I'm running!!");
+  if (buttons[index] == 0) {
+    PORTD |= B00010000; //turns signal to high
   } else {
-    PORTD &= B11101111;
+    PORTD &= B11101111; //turns signal to low
   }
+  buttons_feedback[index] = buttons[index];
   index++;
+  //Serial.println(index);
 }
 
 void resetButtons() {
   index = 0;
+  counter++;
+  //Serial.println("Latch");
+  
+  //for (int i=0; i < 16; i++) {
+  //Serial.print(i);
+  //Serial.print(": ");
+  //Serial.println(buttons_feedback[i]);
+  //}
 }
