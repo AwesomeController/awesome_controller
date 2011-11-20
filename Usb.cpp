@@ -163,7 +163,8 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data , byte
     wait_nak = (wait) ? USB_NAK_LIMIT : 1;
     regWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
     while( 1 ) { // use a 'return' to exit this loop
-        rcode = dispatchPkt( tokIN, ep, wait_nak );           //IN packet to EP-'endpoint'. Function takes care of NAKS.
+        // IN packet to EP-'endpoint'. Function takes care of NAKS.
+        rcode = dispatchPkt( tokIN, ep, wait_nak );           
         if( rcode ) {
             return( rcode );                            //should be 0, indicating ACK. Else return error code.
         }
@@ -246,7 +247,7 @@ byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
 /* return codes 0x00-0x0f are HRSLT( 0x00 being success ), 0xff means timeout                       */
 byte USB::dispatchPkt( byte token, byte ep, int wait_nak )
 {
-  unsigned long timeout = millis() + USB_XFER_TIMEOUT;;
+  unsigned long timeout = millis() + USB_XFER_TIMEOUT;
   byte tmpdata;   
   byte rcode;
   unsigned int nak_count = 0; // Changed RI 15/11/09

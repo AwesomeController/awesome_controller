@@ -527,36 +527,38 @@ void printProgStr(const prog_char str[])
 }
 /* END bluetooth testing */
 
-/* Initialize CSR Bluetooth Controller */
-void CSR_init( void )
-{
- byte rcode = 0;  //return code
+/**
+  Initialize the bluetooth dongle.
 
- 
-/**/
+  Assumes the dongle is based on the Cambridge Silicon Radio(CSR) Bluecore 4.
+  These devices are common and low cost at less than $5 each. They are based on
+  the BC41B143A.
+**/
+void CSR_init(void) {
+  byte rcode = 0;  //return code
 
-    /* Initialize data structures for endpoints of device 1*/
-    bt_dongle_ep_record[ CONTROL_PIPE ] = *( Usb2.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
-    bt_dongle_ep_record[ EVENT_PIPE ].epAddr = 0x01;    // Bluetooth event endpoint
-    bt_dongle_ep_record[ EVENT_PIPE ].Attr  = EP_INTERRUPT;
-    bt_dongle_ep_record[ EVENT_PIPE ].MaxPktSize = INT_MAXPKTSIZE;
-    bt_dongle_ep_record[ EVENT_PIPE ].Interval  = EP_POLL;
-    bt_dongle_ep_record[ EVENT_PIPE ].sndToggle = bmSNDTOG0;
-    bt_dongle_ep_record[ EVENT_PIPE ].rcvToggle = bmRCVTOG0;
-    bt_dongle_ep_record[ DATAIN_PIPE ].epAddr = 0x02;    // Bluetoth data endpoint
-    bt_dongle_ep_record[ DATAIN_PIPE ].Attr  = EP_BULK;
-    bt_dongle_ep_record[ DATAIN_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
-    bt_dongle_ep_record[ DATAIN_PIPE ].Interval  = 0;
-    bt_dongle_ep_record[ DATAIN_PIPE ].sndToggle = bmSNDTOG0;
-    bt_dongle_ep_record[ DATAIN_PIPE ].rcvToggle = bmRCVTOG0;
-    bt_dongle_ep_record[ DATAOUT_PIPE ].epAddr = 0x02;    // Bluetooth data endpoint
-    bt_dongle_ep_record[ DATAOUT_PIPE ].Attr  = EP_BULK;
-    bt_dongle_ep_record[ DATAOUT_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
-    bt_dongle_ep_record[ DATAOUT_PIPE ].Interval  = 0;
-    bt_dongle_ep_record[ DATAOUT_PIPE ].sndToggle = bmSNDTOG0;
-    bt_dongle_ep_record[ DATAOUT_PIPE ].rcvToggle = bmRCVTOG0;
-    Usb2.setDevTableEntry( BT_ADDR, bt_dongle_ep_record );              //plug kbd.endpoint parameters to devtable
-    
+  /* Initialize data structures for endpoints of device 1*/
+  bt_dongle_ep_record[ CONTROL_PIPE ] = *( Usb2.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
+  bt_dongle_ep_record[ EVENT_PIPE ].epAddr = 0x01;    // Bluetooth event endpoint
+  bt_dongle_ep_record[ EVENT_PIPE ].Attr  = EP_INTERRUPT;
+  bt_dongle_ep_record[ EVENT_PIPE ].MaxPktSize = INT_MAXPKTSIZE;
+  bt_dongle_ep_record[ EVENT_PIPE ].Interval  = EP_POLL;
+  bt_dongle_ep_record[ EVENT_PIPE ].sndToggle = bmSNDTOG0;
+  bt_dongle_ep_record[ EVENT_PIPE ].rcvToggle = bmRCVTOG0;
+  bt_dongle_ep_record[ DATAIN_PIPE ].epAddr = 0x02;    // Bluetoth data endpoint
+  bt_dongle_ep_record[ DATAIN_PIPE ].Attr  = EP_BULK;
+  bt_dongle_ep_record[ DATAIN_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
+  bt_dongle_ep_record[ DATAIN_PIPE ].Interval  = 0;
+  bt_dongle_ep_record[ DATAIN_PIPE ].sndToggle = bmSNDTOG0;
+  bt_dongle_ep_record[ DATAIN_PIPE ].rcvToggle = bmRCVTOG0;
+  bt_dongle_ep_record[ DATAOUT_PIPE ].epAddr = 0x02;    // Bluetooth data endpoint
+  bt_dongle_ep_record[ DATAOUT_PIPE ].Attr  = EP_BULK;
+  bt_dongle_ep_record[ DATAOUT_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
+  bt_dongle_ep_record[ DATAOUT_PIPE ].Interval  = 0;
+  bt_dongle_ep_record[ DATAOUT_PIPE ].sndToggle = bmSNDTOG0;
+  bt_dongle_ep_record[ DATAOUT_PIPE ].rcvToggle = bmRCVTOG0;
+  Usb2.setDevTableEntry( BT_ADDR, bt_dongle_ep_record );              //plug kbd.endpoint parameters to devtable
+
     /* read the device descriptor and check VID and PID*/
     rcode = Usb2.getDevDescr( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, DEV_DESCR_LEN , buf );
     if( rcode ) {
@@ -570,7 +572,7 @@ void CSR_init( void )
     }
     
     /* Configure device */
-    rcode = Usb2.setConf( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, BT_CONFIGURATION );                    
+   rcode = Usb2.setConf( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, BT_CONFIGURATION );                    
     if( rcode ) {
         printProgStr(Config_Error_str);
         Serial.print( rcode, HEX );
@@ -580,11 +582,9 @@ void CSR_init( void )
 
     hci_state = HCI_INIT_STATE;
     hci_counter = 0;
-  //  LCD.clear();
     
     printProgStr(CSR_Init_str);
     delay(200);
-    
 }
 
 /** 
@@ -767,6 +767,9 @@ void handleHCIEventPipe( void ) {
         Serial.println("Handling incoming connect request");
       } else {
           Serial.println("No devices found, and we're totally stuck");
+          printProgStr(Device_Search_str);
+          hci_state = HCI_INQUIRY_STATE; 
+          hci_inquiry();
       }
         
       break;
@@ -808,9 +811,12 @@ void readHCIEventPipe( void ) {
   Serial.println(rcode, DEC);
 
   if ( !rcode){
+    Serial.println("bufp0] event type? from readHCIEventPipe");
+    Serial.println(buf[0], DEC);
     switch (buf[0]){            //switch on event type
     
     case EV_COMMAND_COMPLETE:
+      Serial.println("Handling EV_COMMAND_COMPLETE");
       hci_command_packets = buf[2]; // update flow control
       hci_event_flag |= HCI_FLAG_CMD_COMPLETE; // set command complete flag
       
@@ -847,6 +853,7 @@ void readHCIEventPipe( void ) {
     break;
       
     case EV_COMMAND_STATUS:
+      Serial.println("Handling EV_COMMAND_STATUS");
     
       hci_command_packets = buf[3]; // update flow control
       hci_event_flag |= HCI_FLAG_CMD_STATUS; //set status flag
@@ -862,6 +869,7 @@ void readHCIEventPipe( void ) {
     break;
     
     case EV_CONNECT_COMPLETE:
+      Serial.println("Handling EV_COMMAND_COMPLETE");
     
       hci_event_flag |= HCI_FLAG_CONN_COMPLETE; // set connection complete flag
       if (!buf[2]){ // check if connected OK
@@ -872,6 +880,7 @@ void readHCIEventPipe( void ) {
     
     
     case EV_DISCONNECT_COMPLETE:
+      Serial.println("Handling EV_DISCONNECT_COMPLETE");
     
       hci_event_flag |= HCI_FLAG_DISCONN_COMPLETE; //set disconnect commend complete flag
       if (!buf[2]){ // check if disconnected OK
@@ -880,14 +889,18 @@ void readHCIEventPipe( void ) {
       break;
     
     case EV_NUM_COMPLETE_PKT:
+      Serial.println("Handling EV_NUM_COMPLETE_PKT");
       acl_outstanding_pkt -= (unsigned char) buf[6] | (unsigned char) buf[7] << 8;;    //
       break;
     
     case EV_INQUIRY_COMPLETE:
+      Serial.println("Handling EV_INQUIRY_COMPLETE");
       hci_event_flag |= HCI_FLAG_INQUIRY_COMPLETE;
       break;
   
     case EV_INQUIRY_RESULT:
+      Serial.println("Handling EV_INQUIRY_RESULT");
+      Serial.println("EV_INQUIRY_RESULT maybe we found a bt device");
       char_left = 62;
       result_pointer = 0;
       buf_offset = 3;
@@ -916,6 +929,7 @@ void readHCIEventPipe( void ) {
        
    
     case EV_REMOTE_NAME_COMPLETE:
+      Serial.println("Handling EV_REMOTE_NAME_COMPLETE");
     
       for (char i = 0; i < 20; i++){
           remote_name[remote_name_entry][i] = (unsigned char) buf[9 + i];  //store first 20 bytes  
@@ -927,6 +941,7 @@ void readHCIEventPipe( void ) {
       break;
   
     case EV_INCOMING_CONNECT:
+      Serial.println("Handling EV_INCOMING_CONNECT");
       disc_bdaddr[0][0] = (unsigned char) buf[2];
       disc_bdaddr[0][1] = (unsigned char) buf[3];
       disc_bdaddr[0][2] = (unsigned char) buf[4];
@@ -942,6 +957,7 @@ void readHCIEventPipe( void ) {
       break;
     
     case EV_ROLE_CHANGED:
+      Serial.println("Handling EV_ROLE_CHANGED");
       dev_role = (unsigned char)buf[9];
       break;
           
