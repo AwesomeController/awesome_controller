@@ -141,7 +141,7 @@ USB Usb2;
 
 
 
-EP_RECORD ep_record[ BT_NUM_EP ];  //endpoint record structure for the Bluetooth controller
+EP_RECORD bt_dongle_ep_record[ BT_NUM_EP ];  //endpoint record structure for the Bluetooth controller
 
 
 /* Print strings in Program Memory */
@@ -536,29 +536,29 @@ void CSR_init( void )
 /**/
 
     /* Initialize data structures for endpoints of device 1*/
-    ep_record[ CONTROL_PIPE ] = *( Usb2.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
-    ep_record[ EVENT_PIPE ].epAddr = 0x01;    // Bluetooth event endpoint
-    ep_record[ EVENT_PIPE ].Attr  = EP_INTERRUPT;
-    ep_record[ EVENT_PIPE ].MaxPktSize = INT_MAXPKTSIZE;
-    ep_record[ EVENT_PIPE ].Interval  = EP_POLL;
-    ep_record[ EVENT_PIPE ].sndToggle = bmSNDTOG0;
-    ep_record[ EVENT_PIPE ].rcvToggle = bmRCVTOG0;
-    ep_record[ DATAIN_PIPE ].epAddr = 0x02;    // Bluetoth data endpoint
-    ep_record[ DATAIN_PIPE ].Attr  = EP_BULK;
-    ep_record[ DATAIN_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
-    ep_record[ DATAIN_PIPE ].Interval  = 0;
-    ep_record[ DATAIN_PIPE ].sndToggle = bmSNDTOG0;
-    ep_record[ DATAIN_PIPE ].rcvToggle = bmRCVTOG0;
-    ep_record[ DATAOUT_PIPE ].epAddr = 0x02;    // Bluetooth data endpoint
-    ep_record[ DATAOUT_PIPE ].Attr  = EP_BULK;
-    ep_record[ DATAOUT_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
-    ep_record[ DATAOUT_PIPE ].Interval  = 0;
-    ep_record[ DATAOUT_PIPE ].sndToggle = bmSNDTOG0;
-    ep_record[ DATAOUT_PIPE ].rcvToggle = bmRCVTOG0;
-    Usb2.setDevTableEntry( BT_ADDR, ep_record );              //plug kbd.endpoint parameters to devtable
+    bt_dongle_ep_record[ CONTROL_PIPE ] = *( Usb2.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
+    bt_dongle_ep_record[ EVENT_PIPE ].epAddr = 0x01;    // Bluetooth event endpoint
+    bt_dongle_ep_record[ EVENT_PIPE ].Attr  = EP_INTERRUPT;
+    bt_dongle_ep_record[ EVENT_PIPE ].MaxPktSize = INT_MAXPKTSIZE;
+    bt_dongle_ep_record[ EVENT_PIPE ].Interval  = EP_POLL;
+    bt_dongle_ep_record[ EVENT_PIPE ].sndToggle = bmSNDTOG0;
+    bt_dongle_ep_record[ EVENT_PIPE ].rcvToggle = bmRCVTOG0;
+    bt_dongle_ep_record[ DATAIN_PIPE ].epAddr = 0x02;    // Bluetoth data endpoint
+    bt_dongle_ep_record[ DATAIN_PIPE ].Attr  = EP_BULK;
+    bt_dongle_ep_record[ DATAIN_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
+    bt_dongle_ep_record[ DATAIN_PIPE ].Interval  = 0;
+    bt_dongle_ep_record[ DATAIN_PIPE ].sndToggle = bmSNDTOG0;
+    bt_dongle_ep_record[ DATAIN_PIPE ].rcvToggle = bmRCVTOG0;
+    bt_dongle_ep_record[ DATAOUT_PIPE ].epAddr = 0x02;    // Bluetooth data endpoint
+    bt_dongle_ep_record[ DATAOUT_PIPE ].Attr  = EP_BULK;
+    bt_dongle_ep_record[ DATAOUT_PIPE ].MaxPktSize = BULK_MAXPKTSIZE;
+    bt_dongle_ep_record[ DATAOUT_PIPE ].Interval  = 0;
+    bt_dongle_ep_record[ DATAOUT_PIPE ].sndToggle = bmSNDTOG0;
+    bt_dongle_ep_record[ DATAOUT_PIPE ].rcvToggle = bmRCVTOG0;
+    Usb2.setDevTableEntry( BT_ADDR, bt_dongle_ep_record );              //plug kbd.endpoint parameters to devtable
     
     /* read the device descriptor and check VID and PID*/
-    rcode = Usb2.getDevDescr( BT_ADDR, ep_record[ CONTROL_PIPE ].epAddr, DEV_DESCR_LEN , buf );
+    rcode = Usb2.getDevDescr( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, DEV_DESCR_LEN , buf );
     if( rcode ) {
         printProgStr(Dev_Error_str);
         Serial.print( rcode, HEX );
@@ -570,7 +570,7 @@ void CSR_init( void )
     }
     
     /* Configure device */
-    rcode = Usb2.setConf( BT_ADDR, ep_record[ CONTROL_PIPE ].epAddr, BT_CONFIGURATION );                    
+    rcode = Usb2.setConf( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, BT_CONFIGURATION );                    
     if( rcode ) {
         printProgStr(Config_Error_str);
         Serial.print( rcode, HEX );
@@ -812,11 +812,11 @@ char buf_offset;
         }
         
         for(char i = 0; i < 3; i++){ // ignore rest
-          Usb2.inTransfer(BT_ADDR, ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
+          Usb2.inTransfer(BT_ADDR, bt_dongle_ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
         }
         
       }
-      break;
+    break;
       
     case EV_COMMAND_STATUS:
     
@@ -867,7 +867,7 @@ char buf_offset;
       
       for (char buf_count = 0; buf_count < buf[1]; buf_count++){
            if (!char_left){
-             Usb2.inTransfer(BT_ADDR, ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
+             Usb2.inTransfer(BT_ADDR, bt_dongle_ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
              char_left = 64; 
              buf_offset = 0;         
            }
@@ -893,7 +893,7 @@ char buf_offset;
           remote_name[remote_name_entry][i] = (unsigned char) buf[9 + i];  //store first 20 bytes  
         }
         for(char i = 0; i < 4; i++){ // discard additional bytes
-          Usb2.inTransfer(BT_ADDR, ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
+          Usb2.inTransfer(BT_ADDR, bt_dongle_ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT);
         }
       hci_event_flag |=HCI_FLAG_REMOTE_NAME_COMPLETE;
       break;
@@ -929,7 +929,7 @@ char buf_offset;
 
 void ACL_event_task()
 {
-    Usb2.inTransfer(BT_ADDR, ep_record[ DATAIN_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT); // input on endpoint 2
+    Usb2.inTransfer(BT_ADDR, bt_dongle_ep_record[ DATAIN_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT); // input on endpoint 2
 
 }
 
@@ -1111,5 +1111,5 @@ void hci_remote_name(char disc_device)
 byte HCI_Command( unsigned int nbytes, char* dataptr ) {
     hci_command_packets--; 
     hci_event_flag &= ~HCI_FLAG_CMD_COMPLETE;
-    return( Usb2.ctrlReq( BT_ADDR, ep_record[ CONTROL_PIPE ].epAddr, bmREQ_HCI_OUT, HCI_COMMAND_REQ, 0x00, 0x00 ,0, nbytes, dataptr ));
+    return( Usb2.ctrlReq( BT_ADDR, bt_dongle_ep_record[ CONTROL_PIPE ].epAddr, bmREQ_HCI_OUT, HCI_COMMAND_REQ, 0x00, 0x00 ,0, nbytes, dataptr ));
 }
