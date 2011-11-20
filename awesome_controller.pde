@@ -272,7 +272,7 @@ void loop() {
     }
 /* Take data from the bluetooth dongle */
     if( Usb2.getUsbTaskState() == USB_STATE_RUNNING ){
-      HCI_task(); //poll the HCI event pipe
+      handleHCIEventPipe(); //poll the HCI event pipe
       ACL_event_task(); // start polling the ACL input pipe too, though discard data until connected
     }  
 
@@ -587,30 +587,31 @@ void CSR_init( void )
     
 }
 
-/* Poll Bluetooth and print result */
-
-void HCI_task( void )
-
-{
+/** 
+  Poll the bluetooth dongle for an HCI event we care about, advance the state
+  machine, and then perform the appropriate action.
+**/
+void handleHCIEventPipe( void ) {
  
-    HCI_event_task();
+    // Handle any input and set the appropriate flag for the hci_state
+    readHCIEventPipe();
     
     switch (hci_state){
-      case HCI_INIT_STATE:
+    case HCI_INIT_STATE:
       hci_counter++;
       if (hci_counter > 10){  // wait until we have looped 10 times to clear any old events
-      hci_reset();
-      hci_state = HCI_RESET_STATE;
-      hci_counter = 0;
+        hci_reset();
+        hci_state = HCI_RESET_STATE;
+        hci_counter = 0;
       }
       break;
       
-      case HCI_RESET_STATE:
+    case HCI_RESET_STATE:
       hci_counter++;
       if (hci_cmd_complete){
-       hci_state = HCI_BUFFER_SIZE_STATE;
-       printProgStr(HCI_Reset_str);
-       hci_read_buffer_size();
+        hci_state = HCI_BUFFER_SIZE_STATE;
+        printProgStr(HCI_Reset_str);
+        hci_read_buffer_size();
       }
       if (hci_counter > 1000) {
         printProgStr(Reset_Error_str);
@@ -619,7 +620,7 @@ void HCI_task( void )
       }
       break;
       
-      case HCI_BUFFER_SIZE_STATE:
+    case HCI_BUFFER_SIZE_STATE:
       if (hci_cmd_complete){
         printProgStr(ACL_Length_str);
         Serial.print(acl_data_packet_length, DEC);
@@ -629,13 +630,12 @@ void HCI_task( void )
         Serial.print(acl_data_packets, DEC);
         printProgStr(SCO_Number_str);
         Serial.print(sync_data_packets, DEC);
-      hci_state = HCI_LOCAL_VERSION_STATE; 
-      hci_read_local_version();
+        hci_state = HCI_LOCAL_VERSION_STATE; 
+        hci_read_local_version();
       }
       break;
- 
       
- case HCI_LOCAL_VERSION_STATE:
+   case HCI_LOCAL_VERSION_STATE:
       if (hci_cmd_complete){
         printProgStr(HCI_Version_str);
         Serial.print(hci_version, DEC);
@@ -647,66 +647,77 @@ void HCI_task( void )
         Serial.print(manufacturer_id, DEC);
         printProgStr(LMP_Subvers_str);
         Serial.print(lmp_subversion, DEC);
-      hci_state = HCI_LOCAL_NAME_STATE; 
-      hci_read_local_name();
+        hci_state = HCI_LOCAL_NAME_STATE; 
+        hci_read_local_name();
       }
       break;
  
-      case HCI_LOCAL_NAME_STATE:
+    case HCI_LOCAL_NAME_STATE:
       if (hci_cmd_complete){
         printProgStr(Local_Name_str);
         for (char i = 0; i < 20; i++){
           Serial.print(local_name[i]);
-          if(local_name[i] == NULL) break;
+          if (local_name[i] == NULL) {
+            break;
+          }
         }
         hci_state = HCI_BDADDR_STATE;
         hci_read_bdaddr();
       }
       break;
       
-      case HCI_BDADDR_STATE:
+    case HCI_BDADDR_STATE:
       if (hci_cmd_complete){
         printProgStr(Local_BDADDR_str);
         for ( char i=5; i >= 0; i--){
-          if (my_bdaddr[i] < 16) Serial.print("0");
+          if (my_bdaddr[i] < 16) {
+            Serial.print("0");
+          }
           Serial.print(my_bdaddr[i], HEX);
         }
         
         printProgStr(Device_Search_str);
-      hci_state = HCI_INQUIRY_STATE; 
-      hci_inquiry();
+        hci_state = HCI_INQUIRY_STATE; 
+        hci_inquiry();
       }
       break;
       
-      case HCI_INQUIRY_STATE:
+    case HCI_INQUIRY_STATE:
       if (hci_inquiry_complete){
+        // We've completed our bluetooth scan. Report the results
         printProgStr(Search_Done_str); 
         printProgStr(Device_Found_str);
+        // Print the number of devices found during the inquiry
         Serial.print(discovery_results, DEC);
         for ( char j=0; j < discovery_results; j++){
+          // For each discovered device, print out the bluetooth address and ...?
           printProgStr(Found_BDADDR_str);
           for ( char i=5; i >= 0; i--){
             if (disc_bdaddr[j][i] < 16) Serial.print("0");
             Serial.print(disc_bdaddr[j][i], HEX);
           }
-        printProgStr(Class_str);
+          // Bluetooth device class
+          printProgStr(Class_str);
           for ( char i=0; i < 3; i++){
-            if (disc_class[j][i] < 16) Serial.print("0");
+            if (disc_class[j][i] < 16) {
+              Serial.print("0");
+            }
             Serial.print(disc_class[j][i], HEX);
           } 
-        printProgStr(Mode_str);
-        Serial.print(disc_mode[j],HEX);
-        printProgStr(Offset_str);
-        Serial.print(disc_offset[j],HEX);
-        Serial.println(" ");
+          printProgStr(Mode_str);
+          Serial.print(disc_mode[j],HEX);
+          printProgStr(Offset_str);
+          Serial.print(disc_offset[j],HEX);
+          Serial.println(" ");
         }
         if(discovery_results){
+          // If we found at least one device, advance the state so that we ask
+          // for the names of discovered devices
           remote_name_entry = 0;
           hci_remote_name(remote_name_entry);
           hci_state = HCI_REMOTE_NAME_STATE;
-          
-        }
-        else{
+        } else{
+          // No devices found
           hci_write_scan_enable();
           hci_state = HCI_CONNECT_IN_STATE;
           printProgStr(Connect_In_str); 
@@ -753,12 +764,16 @@ void HCI_task( void )
         hci_accept_connection(0);
         printProgStr(Device_Connected_str);
         hci_state = HCI_DONE_STATE; 
+        Serial.println("Handling incoming connect request");
+      } else {
+          Serial.println("No devices found, and we're totally stuck");
       }
         
       break;
       
            
       case HCI_DONE_STATE:
+          Serial.println("We're in the DONE state. What's a done state?");
       
       break;
       
@@ -771,18 +786,31 @@ void HCI_task( void )
 }
 
 
-void HCI_event_task( void )
-{
-byte rcode = 0;  //return code
-char char_left;
-char result_pointer;
-char buf_offset;
-  /* check the event pipe*/
-  rcode = Usb2.inTransfer(BT_ADDR, ep_record[ EVENT_PIPE ].epAddr, MAX_BUFFER_SIZE, buf, USB_NAK_NOWAIT); // input on endpoint 1
+/**
+  Check the bluetooth HCI for events, gather resulting data and set appropriate
+  flags.
+**/
+void readHCIEventPipe( void ) {
+  byte rcode = 0;  //return code
+  char char_left;
+  char result_pointer;
+  char buf_offset;
+
+  // Read any input on the event pipe
+  rcode = Usb2.inTransfer(
+    BT_ADDR, 
+    bt_dongle_ep_record[ EVENT_PIPE ].epAddr, 
+    MAX_BUFFER_SIZE, 
+    buf, 
+    USB_NAK_NOWAIT
+  ); 
+  Serial.println("rcode from readHCIEventPipe");
+  Serial.println(rcode, DEC);
+
   if ( !rcode){
     switch (buf[0]){            //switch on event type
     
-      case EV_COMMAND_COMPLETE:
+    case EV_COMMAND_COMPLETE:
       hci_command_packets = buf[2]; // update flow control
       hci_event_flag |= HCI_FLAG_CMD_COMPLETE; // set command complete flag
       
@@ -831,7 +859,7 @@ char buf_offset;
         Serial.print( buf[5], HEX );
         
       }
-      break;
+    break;
     
     case EV_CONNECT_COMPLETE:
     
@@ -909,7 +937,8 @@ char buf_offset;
       disc_class[0][1] = (unsigned char) buf[9];
       disc_class[0][2] = (unsigned char) buf[10];
       dev_link_type = (unsigned char) buf[11];
-      hci_event_flag |=HCI_FLAG_INCOMING_REQUEST;
+      hci_event_flag |= HCI_FLAG_INCOMING_REQUEST;
+      Serial.println("We're handling an EV_INCOMING_CONNECT 0x04");
       break;
     
     case EV_ROLE_CHANGED:
@@ -1059,23 +1088,23 @@ void hci_inquiry(void)
   return;
 }
 
-void hci_accept_connection(char disc_device)
-{
-   hci_event_flag |= HCI_FLAG_CONNECT_OK;
-   hci_event_flag &= ~(HCI_FLAG_INCOMING_REQUEST);
+void hci_accept_connection(char disc_device) {
+  hci_event_flag |= HCI_FLAG_CONNECT_OK;
+  // Remove the incoming request flag
+  hci_event_flag &= ~(HCI_FLAG_INCOMING_REQUEST);
    
-   buf[0] = 0x09; // HCI OCF = 9
-   buf[1]= 0x04; // HCI OGF = 1
-   buf[2] = 0x07; // parameter length 7
-   buf[3] =disc_bdaddr[disc_device][0]; // 6 octet bdaddr
-   buf[4] = disc_bdaddr[disc_device][1];
-   buf[5] = disc_bdaddr[disc_device][2];
-   buf[6] = disc_bdaddr[disc_device][3];
-   buf[7] = disc_bdaddr[disc_device][4];
-   buf[8] = disc_bdaddr[disc_device][5];
-   buf[9] = 0; //switch role to master
+  buf[0] = 0x09; // HCI OCF = 9
+  buf[1]= 0x04; // HCI OGF = 1
+  buf[2] = 0x07; // parameter length 7
+  buf[3] =disc_bdaddr[disc_device][0]; // 6 octet bdaddr
+  buf[4] = disc_bdaddr[disc_device][1];
+  buf[5] = disc_bdaddr[disc_device][2];
+  buf[6] = disc_bdaddr[disc_device][3];
+  buf[7] = disc_bdaddr[disc_device][4];
+  buf[8] = disc_bdaddr[disc_device][5];
+  buf[9] = 0; //switch role to master
    
-   HCI_Command(10 , buf);
+  HCI_Command(10 , buf);
  
   return;
 }
