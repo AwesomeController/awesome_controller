@@ -1,9 +1,9 @@
 #include <SPI.h>
 #include "ps3_usb.h"
 
-#DEFINE LATCH_PIN = 2;
-#DEFINE CLOCK_PIN = 3;
-#DEFINE DATA_PIN = 4;
+int LATCH_PIN = 2;
+int CLOCK_PIN = 3;
+int DATA_PIN = 4;
 
 volatile int index;
 boolean buttons[16];
@@ -34,22 +34,6 @@ void initController() {
 
 void loop() {
   readControllerState();
-  
-  digitalWrite(LATCH_PIN, HIGH);
-  delayMicroseconds(12);
-  digitalWrite(LATCH_PIN, LOW);
-  delayMicroseconds(6);
-  
-  for (int i=0; i < 16; i++){
-    digitalWrite(CLOCK_PIN, LOW);
-    buttons[i] = digitalRead(DATA_PIN);
-    delayMicroseconds(6);
-    
-    digitalWrite(CLOCK_PIN, HIGH);
-    delayMicroseconds(6);
-  }
-  
-  delay(17);
 }
 
 void readControllerState() {
@@ -72,15 +56,6 @@ void readControllerState() {
       buttons[13] = false;
       buttons[14] = false;
       buttons[15] = false;
-      
-      int len = sizeof(buttons)/sizeof(boolean);
-
-      for (int i = 0; i < len; i++){
-        Serial.print("Button #");
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println((int)buttons[i]);
-      }
     }
   }
 }
@@ -96,4 +71,5 @@ void snesKeyDown(){
 
 void resetButtons(){
   index = 0;
+  snesKeyDown();
 }
