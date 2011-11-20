@@ -5,9 +5,9 @@
 #include <avr/pgmspace.h>
 /* END bluetooth testing */
 
-#define int LATCH_PIN = 2;
-#define int CLOCK_PIN = 3;
-#define int DATA_PIN = 4;
+#define LATCH_PIN 2
+#define CLOCK_PIN 3
+#define DATA_PIN 4
 
 /* START bluetooth testing */
 #define LOBYTE(x) ((char*)(&(x)))[0]
@@ -57,15 +57,38 @@ const char Unk_Length_str[] PROGMEM ="\r\nLength:\t\t";
 const char Unk_Type_str[] PROGMEM ="\r\nType:\t\t";
 const char Unk_Contents_str[] PROGMEM ="\r\nContents:\t";
 
-//MAX3421E Max;
-//USB Usb;
-
+USB Usb2;
 /* END bluetooth testing */
+
+/** START Data for bluetooth connection **/
+/* CSR Bluetooth data taken from descriptors */
+/* All of this is bluetooth-dongle specific */
+#define BT_ADDR        1
+#define CSR_VID_LO      0x12  // CSR VID
+#define CSR_VID_HI      0x0a
+#define CSR_PID_LO      0x01  // Bluetooth HCI Device
+#define CSR_PID_HI      0x00
+#define BT_CONFIGURATION 1
+#define BT_INTERFACE    0 // Only use interface 0
+#define BT_NUM_EP      4
+#define INT_MAXPKTSIZE   16
+#define BULK_MAXPKTSIZE  64
+#define EP_INTERRUPT    0x03 // endpoint types
+#define EP_BULK         0x02
+#define EP_POLL         0x01 // interrupt poll interval
+
+#define CONTROL_PIPE      0 // names we give to the 4 pipes
+#define EVENT_PIPE        1
+#define DATAIN_PIPE       2
+#define DATAOUT_PIPE      3
+/** END Data for bluetooth connection **/
 
 volatile int index;
 boolean buttons[16];
 
 PS3_USB PS3Game;
+
+int dongleDiagnosisComplete = 0;
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -79,6 +102,7 @@ void setup() {
   
   SPI.begin();
   
+
   initController();
 }
 
@@ -93,8 +117,9 @@ void loop() {
   readControllerState();
   
 /* START bluetooth testing */
+  Usb2.Task();
   byte rcode;
-  if( Usb.getUsbTaskState() >= 0x80 ) {  //state configuring or higher
+  if( dongleDiagnosisComplete == 0 && Usb2.getUsbTaskState() >= 0x80 ) {  //state configuring or higher
     rcode = getdevdescr( 1 );                    //hardcoded device address
     if( rcode ) {
       printProgStr(Gen_Error_str);
@@ -105,6 +130,7 @@ void loop() {
       printProgStr(Gen_Error_str);
       print_hex(rcode, 8);
     }
+    dongleDiagnosisComplete = 1; // Only want to print out our dongle diagnosis once
   }    
 /* END bluetooth testing */
 
@@ -178,7 +204,7 @@ byte getdevdescr( byte addr )
 {
   USB_DEVICE_DESCRIPTOR buf;
   byte rcode;
-  rcode = Usb.getDevDescr( addr, 0, 0x12, ( char *)&buf );
+  rcode = Usb2.getDevDescr( addr, 0, 0x12, ( char *)&buf );
   if( rcode ) {
     return( rcode );
   }
@@ -223,14 +249,14 @@ byte getconfdescr( byte addr, byte conf )
   byte descr_length;
   byte descr_type;
   unsigned int total_length;
-  rcode = Usb.getConfDescr( addr, 0, 4, conf, buf );  //get total length
+  rcode = Usb2.getConfDescr( addr, 0, 4, conf, buf );  //get total length
   LOBYTE( total_length ) = buf[ 2 ];
   HIBYTE( total_length ) = buf[ 3 ];
   if( total_length > 256 ) {    //check if total length is larger than buffer
     printProgStr(Conf_Trunc_str);
     total_length = 256;
   }
-  rcode = Usb.getConfDescr( addr, 0, total_length, conf, buf ); //get the whole descriptor
+  rcode = Usb2.getConfDescr( addr, 0, total_length, conf, buf ); //get the whole descriptor
   while( buf_ptr < buf + total_length ) {  //parsing descriptors
     descr_length = *( buf_ptr );
     descr_type = *( buf_ptr + 1 );
