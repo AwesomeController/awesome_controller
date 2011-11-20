@@ -6,7 +6,9 @@ int CLOCK_PIN = 3;
 int DATA_PIN = 4;
 
 volatile int index;
+volatile int counter;
 boolean buttons[16];
+boolean buttons_feedback[16];
 
 PS3_USB PS3Game;
 
@@ -33,7 +35,16 @@ void initController() {
 }
 
 void loop() {
-  readControllerState();
+  readControllerStateNES();
+//  if (counter > 64) {
+//    counter = 0;
+//    for (int i = 0; i < 16; i++) {
+//    Serial.print(i);
+//    Serial.print(": ");
+//    Serial.println((int)buttons_feedback[i]);
+//    }
+//    Serial.println("latch");
+//  }
 }
 
 void readControllerState() {
@@ -49,13 +60,23 @@ void readControllerState() {
       buttons[6] = PS3Game.buttonPressed(buLeft);
       buttons[7] = PS3Game.buttonPressed(buRight);
       buttons[8] = PS3Game.buttonPressed(buCircle);
-      buttons[9] = PS3Game.buttonPressed(buTriangle);
-      buttons[10] = PS3Game.buttonPressed(buL1);
-      buttons[11] = PS3Game.buttonPressed(buR1);
-      buttons[12] = false;
-      buttons[13] = false;
-      buttons[14] = false;
-      buttons[15] = false;
+    }
+  }
+}
+
+void readControllerStateNES(){
+  PS3Game.task();
+  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
+    if (PS3Game.buttonChanged()){
+      buttons[0] = PS3Game.buttonPressed(buCross);
+      buttons[1] = PS3Game.buttonPressed(buSquare);
+      buttons[2] = PS3Game.buttonPressed(buSelect);
+      buttons[3] = PS3Game.buttonPressed(buStart);
+      buttons[4] = PS3Game.buttonPressed(buUp);
+      buttons[5] = PS3Game.buttonPressed(buDown);
+      buttons[6] = PS3Game.buttonPressed(buLeft);
+      buttons[7] = PS3Game.buttonPressed(buRight);
+      buttons[8] = PS3Game.buttonPressed(buCircle);
     }
   }
 }
@@ -66,10 +87,12 @@ void snesKeyDown(){
   } else {
     PORTD &= B11101111; //turns signal to low
   }
+  buttons_feedback[index] = buttons[index];
   index++;
 }
 
 void resetButtons(){
   index = 0;
   snesKeyDown();
+  counter++;
 }
