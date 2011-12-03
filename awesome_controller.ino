@@ -1,7 +1,5 @@
-#define TRUE 1
-#define FALSE 0
-#define USE_PS3 TRUE
-#define USE_WII FALSE
+//#define USE_PS3
+#define USE_WII
 
 #include <SPI.h>
 
@@ -43,6 +41,7 @@ void setup() {
 #ifdef USE_PS3
   initPS3Controller();
 #endif
+
 #ifdef USE_WII
   initWiiController();
 #endif
@@ -59,7 +58,9 @@ void initPS3Controller() {
 
 #ifdef USE_WII
 void initWiiController() {
+  Serial.begin(9600);
   wiiremote.init();
+  Serial.println("Wii controller about to be initialized");
 
   // Toumey's controller
   // unsigned char wiiremote_bdaddr[6] = {0x00, 0x1b, 0x7a, 0x00, 0x6c, 0xc5};
@@ -77,9 +78,12 @@ void loop() {
   readControllerState();
 #endif
 
+#ifdef USE_WII
   wiiremote.task(&readButtons);
+#endif
 }
 
+#ifdef USE_WII
 void readButtons(void){
   buttons[0] = wiiremote.buttonPressed(WIIREMOTE_TWO);
   buttons[1] = wiiremote.buttonPressed(WIIREMOTE_ONE);
@@ -91,6 +95,7 @@ void readButtons(void){
   buttons[7] = wiiremote.buttonPressed(WIIREMOTE_DOWN);
   buttons[8] = wiiremote.buttonPressed(WIIREMOTE_A);
 }
+#endif
 
 #ifdef USE_PS3
 void readControllerState() {
