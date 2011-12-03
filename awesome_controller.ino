@@ -12,18 +12,18 @@ boolean buttons[16];
 //PS3_USB PS3Game;
 WiiRemote wiiremote;
 
-void setup() {  
+void setup() {
   attachInterrupt(0, resetButtons, RISING);
   attachInterrupt(1, snesKeyDown, RISING);
-  
+
   pinMode(CLOCK_PIN, INPUT);
   pinMode(LATCH_PIN, INPUT);
   pinMode(DATA_PIN, OUTPUT);
-  
+
   digitalWrite(CLOCK_PIN, HIGH);
-  
+
   SPI.begin();
-  
+
   //initPS3Controller();
   initWiiController();
 }
@@ -37,10 +37,10 @@ void setup() {
 
 void initWiiController() {
   wiiremote.init();
-  
+
   // Toumey's controller
   // unsigned char wiiremote_bdaddr[6] = {0x00, 0x1b, 0x7a, 0x00, 0x6c, 0xc5};
-  
+
   // Kyle's controller
   unsigned char wiiremote_bdaddr[6] = {0x00, 0x1a, 0xe9, 0x41, 0xfc, 0xba};
   wiiremote.setBDAddress(wiiremote_bdaddr, 6);
@@ -49,7 +49,7 @@ void initWiiController() {
 
 void loop() {
   // readControllerState();
-  
+
   wiiremote.task(&readButtons);
 }
 
@@ -88,7 +88,7 @@ void readButtons(void){
 //    }
 //  }
 //}
-//
+
 //void readControllerStateNES(){
 //  PS3Game.task();
 //  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
@@ -106,16 +106,16 @@ void readButtons(void){
 //  }
 //}
 
-void snesKeyDown(){
+void snesKeyDown() {
   if (buttons[index] == 0) {
-    PORTD |= B00010000; //turns signal to high
+    PORTD |= B00010000; // turns signal to high
   } else {
-    PORTD &= B11101111; //turns signal to low
+    PORTD &= B11101111; // turns signal to low
   }
   index++;
 }
 
-void resetButtons(){
+void resetButtons() {
   index = 0;
   snesKeyDown();
 }
