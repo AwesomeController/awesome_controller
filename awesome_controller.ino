@@ -1,4 +1,4 @@
-//#define USE_PS3
+#define USE_PS3
 #define USE_WII
 
 #include <SPI.h>

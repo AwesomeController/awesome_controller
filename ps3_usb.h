@@ -30,9 +30,9 @@ with this library; if not, write to the Free Software Foundation, Inc.,
 #define PS3_IF          0
 #define PS3_NUM_EP      3
 #define EP_MAXPKTSIZE   64
-#define EP_INTERRUPT    0x03 
-#define EP_POLL         0x01
-#define CONTROL_PIPE      0
+#define EP_INTERRUPT_PS3    0x03 
+#define EP_POLL_PS3         0x01
+#define CONTROL_PIPE_PS3      0
 #define OUTPUT_PIPE       1
 #define INPUT_PIPE        2
 

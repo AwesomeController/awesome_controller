@@ -81,42 +81,42 @@ void PS3_USB::PS3_init( void )
 	ps3_status = statusDeviceConnected;;
 
  /* Initialize data structures for endpoints of device */
-    ep_record[ CONTROL_PIPE ] = *( Usb_ps3.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
+    ep_record[ CONTROL_PIPE_PS3 ] = *( Usb_ps3.getDevTableEntry( 0,0 ));  //copy endpoint 0 parameters
     ep_record[ OUTPUT_PIPE ].epAddr = 0x02;    // PS3 output endpoint
-    ep_record[ OUTPUT_PIPE ].Attr  = EP_INTERRUPT;
+    ep_record[ OUTPUT_PIPE ].Attr  = EP_INTERRUPT_PS3;
     ep_record[ OUTPUT_PIPE ].MaxPktSize = EP_MAXPKTSIZE;
-    ep_record[ OUTPUT_PIPE ].Interval  = EP_POLL;
+    ep_record[ OUTPUT_PIPE ].Interval  = EP_POLL_PS3;
     ep_record[ OUTPUT_PIPE ].sndToggle = bmSNDTOG0;
     ep_record[ OUTPUT_PIPE ].rcvToggle = bmRCVTOG0;
     ep_record[ INPUT_PIPE ].epAddr = 0x01;    // PS3 report endpoint
-    ep_record[ INPUT_PIPE ].Attr  = EP_INTERRUPT;
+    ep_record[ INPUT_PIPE ].Attr  = EP_INTERRUPT_PS3;
     ep_record[ INPUT_PIPE ].MaxPktSize = EP_MAXPKTSIZE;
-    ep_record[ INPUT_PIPE ].Interval  = EP_POLL;
+    ep_record[ INPUT_PIPE ].Interval  = EP_POLL_PS3;
     ep_record[ INPUT_PIPE ].sndToggle = bmSNDTOG0;
     ep_record[ INPUT_PIPE ].rcvToggle = bmRCVTOG0;
     
     Usb_ps3.setDevTableEntry( PS3_ADDR, ep_record );              //plug kbd.endpoint parameters to devtable
     delay(200); // give time for address change
     /* read the device descriptor and check VID and PID*/
-    rcode = Usb_ps3.getDevDescr( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, DEV_DESCR_LEN , buf );
+    rcode = Usb_ps3.getDevDescr( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, DEV_DESCR_LEN , buf );
     if( rcode ) return;
     device_descriptor = (USB_DEVICE_DESCRIPTOR *) &buf;
     if(
     (device_descriptor->idVendor != PS3_VID) ||(device_descriptor->idProduct != PS3_PID)  ) return;
     
     /* Configure device */
-    rcode = Usb_ps3.setConf( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_CONFIGURATION );                    
+    rcode = Usb_ps3.setConf( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_CONFIGURATION );                    
     if( rcode ) return;
     ps3_status |= statusUSBConfigured;
  
     /* Set the PS3 controller to send reports */
     for (i=0; i < PS3_F4_REPORT_LEN; i++) buf[i] = pgm_read_byte_near( feature_F4_report + i); 
-    rcode = Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_F4_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F4_REPORT_ID , buf );
+    rcode = Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_F4_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F4_REPORT_ID , buf );
     if( rcode ) return;
     
     /* Set the PS3 controller LED 1 On */
     for (i=0; i < PS3_01_REPORT_LEN; i++) buf[i] = pgm_read_byte_near( output_01_report + i); 
-    rcode = Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_01_REPORT_LEN,  PS3_IF, HID_REPORT_OUTPUT, PS3_01_REPORT_ID , buf );
+    rcode = Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_01_REPORT_LEN,  PS3_IF, HID_REPORT_OUTPUT, PS3_01_REPORT_ID , buf );
     if( rcode ) return;
     
     ps3_status |= statusPS3Connected;
@@ -198,7 +198,7 @@ char buf[ 64 ] = { 0 };      //General purpose buffer for usb data
         else buf[2] = 0xff;
       }
 	       
-      Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_01_REPORT_LEN,  PS3_IF, HID_REPORT_OUTPUT, PS3_01_REPORT_ID , buf );
+      Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_01_REPORT_LEN,  PS3_IF, HID_REPORT_OUTPUT, PS3_01_REPORT_ID , buf );
 
 	return;
 }
@@ -210,13 +210,13 @@ void PS3_USB::setBDADDR(unsigned char * bdaddr){
     for (int i=0; i < 6; i++){
         buf[i+2] = bdaddr[i];
     }
-    Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_F5_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F5_REPORT_ID , buf ); 
+    Usb_ps3.setReport( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_F5_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F5_REPORT_ID , buf ); 
 	return;
 }
 
 void PS3_USB::getBDADDR(unsigned char * bdaddr){
 	char buf[ PS3_F5_REPORT_LEN ];
-	Usb_ps3.getReport( PS3_ADDR, ep_record[ CONTROL_PIPE ].epAddr, PS3_F5_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F5_REPORT_ID , buf );
+	Usb_ps3.getReport( PS3_ADDR, ep_record[ CONTROL_PIPE_PS3 ].epAddr, PS3_F5_REPORT_LEN,  PS3_IF, HID_REPORT_FEATURE, PS3_F5_REPORT_ID , buf );
     for( int i=0; i < 6; i++){
         bdaddr[i] = buf[i + 2];
     }
