@@ -38,7 +38,11 @@ void setup() {
 void initWiiController() {
   wiiremote.init();
   
-  unsigned char wiiremote_bdaddr[6] = {0x00, 0x1b, 0x7a, 0x00, 0x6c, 0xc5};
+  // Toumey's controller
+  // unsigned char wiiremote_bdaddr[6] = {0x00, 0x1b, 0x7a, 0x00, 0x6c, 0xc5};
+  
+  // Kyle's controller
+  unsigned char wiiremote_bdaddr[6] = {0x00, 0x1a, 0xe9, 0x41, 0xfc, 0xba};
   wiiremote.setBDAddress(wiiremote_bdaddr, 6);
   wiiremote.setBDAddressMode(BD_ADDR_FIXED);
 }
