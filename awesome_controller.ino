@@ -1,6 +1,17 @@
+#define TRUE 1
+#define FALSE 0
+#define USE_PS3 TRUE
+#define USE_WII FALSE
+
 #include <SPI.h>
-//#include "ps3_usb.h"
+
+#ifdef USE_PS3
+#include "ps3_usb.h"
+#endif
+
+#ifdef USE_WII
 #include "WiiRemote.h"
+#endif
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
@@ -9,8 +20,13 @@ int DATA_PIN = 4;
 volatile int index;
 boolean buttons[16];
 
-//PS3_USB PS3Game;
+#ifdef USE_PS3
+PS3_USB PS3Game;
+#endif
+
+#ifdef USE_WII
 WiiRemote wiiremote;
+#endif
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -24,17 +40,24 @@ void setup() {
 
   SPI.begin();
 
-  //initPS3Controller();
+#ifdef USE_PS3
+  initPS3Controller();
+#endif
+#ifdef USE_WII
   initWiiController();
+#endif
 }
 
-//void initPS3Controller() {
-//  Serial.begin(9600);
-//  Serial.println("PS3 controller about to be initialized");
-//  PS3Game.init();
-//  Serial.println("PS3 controller initialized");
-//}
+#ifdef USE_PS3
+void initPS3Controller() {
+  Serial.begin(9600);
+  Serial.println("PS3 controller about to be initialized");
+  PS3Game.init();
+  Serial.println("PS3 controller initialized");
+}
+#endif
 
+#ifdef USE_WII
 void initWiiController() {
   wiiremote.init();
 
@@ -43,12 +66,16 @@ void initWiiController() {
 
   // Kyle's controller
   unsigned char wiiremote_bdaddr[6] = {0x00, 0x1a, 0xe9, 0x41, 0xfc, 0xba};
+
   wiiremote.setBDAddress(wiiremote_bdaddr, 6);
   wiiremote.setBDAddressMode(BD_ADDR_FIXED);
 }
+#endif
 
 void loop() {
-  // readControllerState();
+#ifdef USE_PS3
+  readControllerState();
+#endif
 
   wiiremote.task(&readButtons);
 }
@@ -65,30 +92,34 @@ void readButtons(void){
   buttons[8] = wiiremote.buttonPressed(WIIREMOTE_A);
 }
 
-//void readControllerState() {
-//  PS3Game.task();
-//  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
-//    if (PS3Game.buttonChanged()){
-//      buttons[0] = PS3Game.buttonPressed(buCross);
-//      buttons[1] = PS3Game.buttonPressed(buSquare);
-//      buttons[2] = PS3Game.buttonPressed(buSelect);
-//      buttons[3] = PS3Game.buttonPressed(buStart);
-//      buttons[4] = PS3Game.buttonPressed(buUp);
-//      buttons[5] = PS3Game.buttonPressed(buDown);
-//      buttons[6] = PS3Game.buttonPressed(buLeft);
-//      buttons[7] = PS3Game.buttonPressed(buRight);
-//      buttons[8] = PS3Game.buttonPressed(buCircle);
-//      buttons[9] = PS3Game.buttonPressed(buTriangle);
-//      buttons[10] = PS3Game.buttonPressed(buL1);
-//      buttons[11] = PS3Game.buttonPressed(buR1);
-//      buttons[12] = false;
-//      buttons[13] = false;
-//      buttons[14] = false;
-//      buttons[15] = false;
-//    }
-//  }
-//}
+#ifdef USE_PS3
+void readControllerState() {
+  PS3Game.task();
+  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
+    if (PS3Game.buttonChanged()){
+      buttons[0] = PS3Game.buttonPressed(buCross);
+      buttons[1] = PS3Game.buttonPressed(buSquare);
+      buttons[2] = PS3Game.buttonPressed(buSelect);
+      buttons[3] = PS3Game.buttonPressed(buStart);
+      buttons[4] = PS3Game.buttonPressed(buUp);
+      buttons[5] = PS3Game.buttonPressed(buDown);
+      buttons[6] = PS3Game.buttonPressed(buLeft);
+      buttons[7] = PS3Game.buttonPressed(buRight);
+      buttons[8] = PS3Game.buttonPressed(buCircle);
+      buttons[9] = PS3Game.buttonPressed(buTriangle);
+      buttons[10] = PS3Game.buttonPressed(buL1);
+      buttons[11] = PS3Game.buttonPressed(buR1);
+      buttons[12] = false;
+      buttons[13] = false;
+      buttons[14] = false;
+      buttons[15] = false;
+    }
+  }
+}
+#endif
 
+// not needed at this moment (since NES ~= SNES) but might be a good starting point
+// for having different controller types, etc.
 //void readControllerStateNES(){
 //  PS3Game.task();
 //  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
