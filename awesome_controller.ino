@@ -1,15 +1,6 @@
-#define USE_PS3
-#define USE_WII
-
 #include <SPI.h>
-
-#ifdef USE_PS3
 #include "ps3_usb.h"
-#endif
-
-#ifdef USE_WII
 #include "WiiRemote.h"
-#endif
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
@@ -18,13 +9,8 @@ int DATA_PIN = 4;
 volatile int index;
 boolean buttons[16];
 
-#ifdef USE_PS3
 PS3_USB PS3Game;
-#endif
-
-#ifdef USE_WII
 WiiRemote wiiremote;
-#endif
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -37,30 +23,22 @@ void setup() {
   digitalWrite(CLOCK_PIN, HIGH);
 
   SPI.begin();
+  Serial.begin(9600);
 
-#ifdef USE_PS3
   initPS3Controller();
-#endif
-
-#ifdef USE_WII
   initWiiController();
-#endif
 }
 
-#ifdef USE_PS3
 void initPS3Controller() {
-  Serial.begin(9600);
   Serial.println("PS3 controller about to be initialized");
   PS3Game.init();
   Serial.println("PS3 controller initialized");
 }
-#endif
 
-#ifdef USE_WII
 void initWiiController() {
-  Serial.begin(9600);
-  wiiremote.init();
   Serial.println("Wii controller about to be initialized");
+  wiiremote.init();
+  Serial.println("Wii controller initialized");
 
   // Toumey's controller
   // unsigned char wiiremote_bdaddr[6] = {0x00, 0x1b, 0x7a, 0x00, 0x6c, 0xc5};
@@ -71,19 +49,17 @@ void initWiiController() {
   wiiremote.setBDAddress(wiiremote_bdaddr, 6);
   wiiremote.setBDAddressMode(BD_ADDR_FIXED);
 }
-#endif
 
 void loop() {
-#ifdef USE_PS3
+  // eventually: for each controller, read their state and store.
+  // right now only works for the one controller that is plugged in
   readControllerState();
-#endif
 
-#ifdef USE_WII
+  // eventually: for each wiimote, read their state and store.
+  // right now only works for the one controller that is plugged in
   wiiremote.task(&readButtons);
-#endif
 }
 
-#ifdef USE_WII
 void readButtons(void){
   buttons[0] = wiiremote.buttonPressed(WIIREMOTE_TWO);
   buttons[1] = wiiremote.buttonPressed(WIIREMOTE_ONE);
@@ -95,9 +71,7 @@ void readButtons(void){
   buttons[7] = wiiremote.buttonPressed(WIIREMOTE_DOWN);
   buttons[8] = wiiremote.buttonPressed(WIIREMOTE_A);
 }
-#endif
 
-#ifdef USE_PS3
 void readControllerState() {
   PS3Game.task();
   if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
@@ -121,7 +95,6 @@ void readControllerState() {
     }
   }
 }
-#endif
 
 // not needed at this moment (since NES ~= SNES) but might be a good starting point
 // for having different controller types, etc.
