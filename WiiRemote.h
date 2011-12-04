@@ -24,10 +24,10 @@ enum eDescriptor {
     // {{{
     /* CSR Bluetooth data taken from descriptors */
     BT_ADDR = 1,
-    CSR_VID = 0x0a12,   // CSR Vendor ID
-    CSR_PID = 0x0001,   // CSR Product ID
+    CSR_VID = 0x0a12,       // CSR Vendor ID
+    CSR_PID = 0x0001,       // CSR Product ID
     BT_CONFIGURATION = 1,
-    BT_INTERFACE = 0,   // Only use interface 0
+    BT_INTERFACE = 0,       // Only use interface 0
     BT_NUM_EP = 4,
     INT_MAXPKTSIZE = 16,
     BULK_MAXPKTSIZE = 64,
