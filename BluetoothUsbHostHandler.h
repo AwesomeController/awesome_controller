@@ -1,5 +1,5 @@
 /*
-WiiRemote.h - WiiRemote Bluetooth stack on Arduino with USB Host Shield
+BluetoothUsbHostHandler.h - WiiRemote Bluetooth stack on Arduino with USB Host Shield
 Copyright (C) 2010 Tomo Tanaka
 
 This program is based on <wiiblue.pde> which is developed by Oleg Mazurov. This
@@ -14,8 +14,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _WIIREMOTE_H_
-#define _WIIREMOTE_H_
+#ifndef _BLUETOOTH_USB_HOST_HANDLER_H_
+#define _BLUETOOTH_USB_HOST_HANDLER_H_
 
 #include "Max3421e.h"
 #include "Usb.h"
@@ -326,10 +326,10 @@ typedef struct {
 } Report_t;
 
 
-class WiiRemote {
+class BluetoothUsbHostHandler {
   public:
-    WiiRemote(void);
-    ~WiiRemote(void);
+    BluetoothUsbHostHandler(void);
+    ~BluetoothUsbHostHandler(void);
 
     void init(void);
     void task(void (*)());
@@ -414,7 +414,4 @@ class WiiRemote {
     uint8_t buf_[MAX_BUFFER_SIZE];
 };
 
-#endif  // _WIIREMOTE_H_
-
-
-// vim: sts=4 sw=4 ts=4 et cin fdm=marker cms=//%s
+#endif  // _BLUETOOTH_USB_HOST_HANDLER_H_

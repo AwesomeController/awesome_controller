@@ -10,7 +10,7 @@ volatile int index;
 boolean buttons[16];
 
 PS3_USB PS3Game;
-WiiRemote wiiremote;
+BluetoothUsbHostHandler bluetoothUsbHostHandler;
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -26,21 +26,20 @@ void setup() {
   Serial.begin(9600);
 
   initPS3Controller();
-  initWiiController();
+  initBluetoothUsbHostHandler();
 }
 
 void initPS3Controller() {
-  Serial.println("PS3 controller about to be initialized");
+  Serial.println("PS3 USB library about to be initialized");
   PS3Game.init();
-  Serial.println("PS3 controller initialized");
+  Serial.println("PS3 USB library initialized");
 }
 
-void initWiiController() {
-  Serial.println("Wii controller about to be initialized");
-  wiiremote.init();
-  Serial.println("Wii controller initialized");
-
-  wiiremote.setBDAddressMode(BD_ADDR_INQUIRY);
+void initBluetoothUsbHostHandler() {
+  Serial.println("Bluetooth USB Host Handler to be initialized");
+  bluetoothUsbHostHandler.init();
+  Serial.println("Bluetooth USB Host Handler initialized");
+  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
 void loop() {
@@ -50,19 +49,19 @@ void loop() {
 
   // eventually: for each wiimote, read their state and store.
   // right now only works for the one controller that is plugged in
-  wiiremote.task(&readButtons);
+  bluetoothUsbHostHandler.task(&readButtons);
 }
 
 void readButtons(void){
-  buttons[0] = wiiremote.buttonPressed(WIIREMOTE_TWO);
-  buttons[1] = wiiremote.buttonPressed(WIIREMOTE_ONE);
-  buttons[2] = wiiremote.buttonPressed(WIIREMOTE_MINUS);
-  buttons[3] = wiiremote.buttonPressed(WIIREMOTE_PLUS);
-  buttons[4] = wiiremote.buttonPressed(WIIREMOTE_RIGHT);
-  buttons[5] = wiiremote.buttonPressed(WIIREMOTE_LEFT);
-  buttons[6] = wiiremote.buttonPressed(WIIREMOTE_UP);
-  buttons[7] = wiiremote.buttonPressed(WIIREMOTE_DOWN);
-  buttons[8] = wiiremote.buttonPressed(WIIREMOTE_A);
+  buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
+  buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
+  buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_MINUS);
+  buttons[3] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_PLUS);
+  buttons[4] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_RIGHT);
+  buttons[5] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_LEFT);
+  buttons[6] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_UP);
+  buttons[7] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_DOWN);
+  buttons[8] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_A);
 }
 
 void readControllerState() {
