@@ -5,8 +5,11 @@ class WiiController {
   public:
     WiiController(void);
     ~WiiController(void);
+    void printButtonStates(void);
+    boolean buttons[16];
 
-  private:
+
+  //private:
 };
 
 #endif

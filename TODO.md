@@ -1,6 +1,7 @@
 Features
 --------
 
+* Refactor into system objects (NES, SNES, etc.)
 * Refactor WiiRemote library into USB+BluetoothManager and actual
   WiiRemote class.
 * Fixed-address functionality on Bluesmirf (1 Wiimote)
