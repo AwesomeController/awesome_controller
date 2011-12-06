@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include "ps3_usb.h"
-#include "WiiRemote.h"
+#include "BluetoothUsbHostHandler.h"
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
