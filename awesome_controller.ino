@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include "ps3_usb.h"
+#include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
 
 int LATCH_PIN = 2;
@@ -11,6 +12,7 @@ boolean buttons[16];
 
 PS3_USB PS3Game;
 BluetoothUsbHostHandler bluetoothUsbHostHandler;
+WiiController *wiiController;
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -27,6 +29,8 @@ void setup() {
 
   initPS3Controller();
   initBluetoothUsbHostHandler();
+
+  wiiController = new WiiController();
 }
 
 void initPS3Controller() {
