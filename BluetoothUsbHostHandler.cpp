@@ -1,5 +1,5 @@
 /*
-WiiRemote.cpp - WiiRemote Bluetooth stack on Arduino with USB Host Shield
+BluetoothUsbHostHandler.cpp - WiiRemote Bluetooth stack on Arduino with USB Host Shield
 Copyright (C) 2010 Tomo Tanaka
 
 This program is based on <wiiblue.pde> which is developed by Richard Ibbotson.
@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License along with thi
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-#include "WiiRemote.h"
+#include "BluetoothUsbHostHandler.h"
 #include "Max3421e.h"
 #include "Usb.h"
 
@@ -58,7 +58,7 @@ MAX3421E Max;
 USB Usb;
 
 
-WiiRemote::WiiRemote(void) {
+BluetoothUsbHostHandler::BluetoothUsbHostHandler(void) {
     l2cap_state_ = L2CAP_DOWN_STATE;
     l2cap_txid_ = 0;
     command_scid_ = 0x0040;     // L2CAP local CID for HID_Control
@@ -73,15 +73,15 @@ WiiRemote::WiiRemote(void) {
     wiiremote_status_ = 0;
 }
 
-WiiRemote::~WiiRemote(void) {
+BluetoothUsbHostHandler::~BluetoothUsbHostHandler(void) {
 }
 
-void WiiRemote::init(void) {
+void BluetoothUsbHostHandler::init(void) {
     Max.powerOn();
     delay(200);
 }
 
-void WiiRemote::task(void (*pFunc)(void)) {
+void BluetoothUsbHostHandler::task(void (*pFunc)(void)) {
     Max.Task();
     Usb.Task();
     delay(1);
@@ -116,11 +116,11 @@ void WiiRemote::task(void (*pFunc)(void)) {
     }
 } // task
 
-uint8_t WiiRemote::getStatus(void) {
+uint8_t BluetoothUsbHostHandler::getStatus(void) {
     return wiiremote_status_;
 }
 
-void WiiRemote::setBDAddress(uint8_t *bdaddr, int size) {
+void BluetoothUsbHostHandler::setBDAddress(uint8_t *bdaddr, int size) {
     int array_length = ARRAY_LENGTH(wiiremote_bdaddr_);
 
     for (int i = 0; i < size && i < array_length; i++) {
@@ -128,11 +128,11 @@ void WiiRemote::setBDAddress(uint8_t *bdaddr, int size) {
     }
 }
 
-void WiiRemote::setBDAddressMode(eBDAddressMode mode) {
+void BluetoothUsbHostHandler::setBDAddressMode(eBDAddressMode mode) {
     bdaddr_acquisition_mode_ = mode;
 }
 
-void WiiRemote::getBDAddress(uint8_t *bdaddr, int size) {
+void BluetoothUsbHostHandler::getBDAddress(uint8_t *bdaddr, int size) {
     int array_length = ARRAY_LENGTH(wiiremote_bdaddr_);
 
     for (int i = 0; i < size && i < array_length; i++) {
@@ -144,7 +144,7 @@ void WiiRemote::getBDAddress(uint8_t *bdaddr, int size) {
 /************************************************************/
 /* Initialize Bluetooth USB Controller (CSR)                */
 /************************************************************/
-void WiiRemote::initBTController(void) {
+void BluetoothUsbHostHandler::initBTController(void) {
     uint8_t rcode = 0;  // return code
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
     USB_DEVICE_DESCRIPTOR *device_descriptor;
@@ -226,7 +226,7 @@ void WiiRemote::initBTController(void) {
 /************************************************************/
 /* HCI Flow Control                                         */
 /************************************************************/
-void WiiRemote::HCI_task(void) {
+void BluetoothUsbHostHandler::HCI_task(void) {
     HCI_event_task();
 
     switch (hci_state_) {
@@ -321,7 +321,7 @@ void WiiRemote::HCI_task(void) {
     return;
 } // HCI_task
 
-void WiiRemote::HCI_event_task(void) {
+void BluetoothUsbHostHandler::HCI_event_task(void) {
     uint8_t rcode = 0;  // return code
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
 
@@ -350,7 +350,7 @@ void WiiRemote::HCI_event_task(void) {
             Serial.print("\r\nFound WiiRemote BD_ADDR:\t");
             for (uint8_t i = 0; i < 6; i++) {
                 wiiremote_bdaddr_[5-i] = (uint8_t) buf[3+i];
-                DEBUG_PRINT(wiiremote_bdaddr_[5-i], HEX);
+                Serial.print(wiiremote_bdaddr_[5-i], HEX);
             }
             break;
 
@@ -425,7 +425,7 @@ void WiiRemote::HCI_event_task(void) {
 /************************************************************/
 /* HCI Commands                                             */
 /************************************************************/
-uint8_t WiiRemote::hci_reset(void) {
+uint8_t BluetoothUsbHostHandler::hci_reset(void) {
     uint8_t buf[3] = {0};
 
     hci_event_flag_ = 0;    // clear all the flags
@@ -451,7 +451,7 @@ uint8_t hci_read_bd_addr(void) {
 }
 #endif
 
-uint8_t WiiRemote::hci_inquiry(void) {
+uint8_t BluetoothUsbHostHandler::hci_inquiry(void) {
     uint8_t buf[8] = {0};
 
     hci_event_flag_ &= ~(HCI_FLAG_INQUIRY_RESULT | HCI_FLAG_INQUIRY_COMPLETE);
@@ -468,7 +468,7 @@ uint8_t WiiRemote::hci_inquiry(void) {
     return HCI_Command(8, buf);
 }
 
-uint8_t WiiRemote::hci_inquiry_cancel(void) {
+uint8_t BluetoothUsbHostHandler::hci_inquiry_cancel(void) {
     uint8_t buf[3] = {0};
 
     hci_event_flag_ &= ~HCI_FLAG_COMMAND_COMPLETE;
@@ -480,7 +480,7 @@ uint8_t WiiRemote::hci_inquiry_cancel(void) {
     return HCI_Command(3, buf);
 }
 
-uint8_t WiiRemote::hci_connect(uint8_t *bdaddr) {
+uint8_t BluetoothUsbHostHandler::hci_connect(uint8_t *bdaddr) {
     uint8_t buf[16] = {0};
 
     hci_event_flag_ &= ~(HCI_FLAG_CONNECT_COMPLETE | HCI_FLAG_CONNECT_OK);
@@ -506,7 +506,7 @@ uint8_t WiiRemote::hci_connect(uint8_t *bdaddr) {
 }
 
 /* perform HCI Command */
-uint8_t WiiRemote::HCI_Command(uint16_t nbytes, uint8_t *dataptr) {
+uint8_t BluetoothUsbHostHandler::HCI_Command(uint16_t nbytes, uint8_t *dataptr) {
     //hci_event_flag_ &= ~HCI_FLAG_COMMAND_COMPLETE;
     return Usb.ctrlReq(BT_ADDR,
                        ep_record_[ CONTROL_PIPE ].epAddr,
@@ -523,7 +523,7 @@ uint8_t WiiRemote::HCI_Command(uint16_t nbytes, uint8_t *dataptr) {
 /************************************************************/
 /* L2CAP Flow Control                                       */
 /************************************************************/
-void WiiRemote::L2CAP_task(void) {
+void BluetoothUsbHostHandler::L2CAP_task(void) {
     L2CAP_event_task();
 
     switch (l2cap_state_) {
@@ -642,7 +642,7 @@ void WiiRemote::L2CAP_task(void) {
     return;
 } // L2CAP_task
 
-void WiiRemote::L2CAP_event_task(void) {
+void BluetoothUsbHostHandler::L2CAP_event_task(void) {
     uint8_t rcode = 0;  // return code
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
     static uint8_t prev_rcode = 0;
@@ -725,7 +725,7 @@ void WiiRemote::L2CAP_event_task(void) {
 /************************************************************/
 /* L2CAP Commands                                           */
 /************************************************************/
-uint8_t WiiRemote::l2cap_connect(uint16_t scid, uint16_t psm) {
+uint8_t BluetoothUsbHostHandler::l2cap_connect(uint16_t scid, uint16_t psm) {
     uint8_t cmd_buf[8];
     cmd_buf[0] = L2CAP_CMD_CONNECTION_REQUEST;  // Code
     cmd_buf[1] = (uint8_t) (l2cap_txid_++);     // Identifier
@@ -739,7 +739,7 @@ uint8_t WiiRemote::l2cap_connect(uint16_t scid, uint16_t psm) {
     return L2CAP_Command((uint8_t *) cmd_buf, 8);
 }
 
-uint8_t WiiRemote::l2cap_configure(uint16_t dcid) {
+uint8_t BluetoothUsbHostHandler::l2cap_configure(uint16_t dcid) {
     uint8_t cmd_buf[12];
     cmd_buf[0] = L2CAP_CMD_CONFIG_REQUEST;  // Code
     cmd_buf[1] = (uint8_t) (l2cap_txid_++); // Identifier
@@ -757,7 +757,7 @@ uint8_t WiiRemote::l2cap_configure(uint16_t dcid) {
     return L2CAP_Command((uint8_t *) cmd_buf, 12);
 }
 
-uint8_t WiiRemote::l2cap_config_response(
+uint8_t BluetoothUsbHostHandler::l2cap_config_response(
         uint8_t rxid,
         uint16_t dcid) {
     uint8_t resp_buf[10];
@@ -775,7 +775,7 @@ uint8_t WiiRemote::l2cap_config_response(
     return L2CAP_Command((uint8_t *) resp_buf, 10);
 }
 
-uint8_t WiiRemote::l2cap_disconnect_response(
+uint8_t BluetoothUsbHostHandler::l2cap_disconnect_response(
         uint8_t rxid,
         uint16_t scid,
         uint16_t dcid) {
@@ -792,7 +792,7 @@ uint8_t WiiRemote::l2cap_disconnect_response(
     return L2CAP_Command((uint8_t *) resp_buf, 8);
 }
 
-uint8_t WiiRemote::L2CAP_Command(uint8_t *data, uint8_t length) {
+uint8_t BluetoothUsbHostHandler::L2CAP_Command(uint8_t *data, uint8_t length) {
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
     buf[0] = (uint8_t) (hci_handle_ & 0xff);    // HCI handle with PB,BC flag
     buf[1] = (uint8_t) (((hci_handle_ >> 8) & 0x0f) | 0x20);
@@ -818,7 +818,7 @@ uint8_t WiiRemote::L2CAP_Command(uint8_t *data, uint8_t length) {
 /************************************************************/
 /* HID Report (HCI ACL Packet)                              */
 /************************************************************/
-void WiiRemote::readReport(uint8_t *data) {
+void BluetoothUsbHostHandler::readReport(uint8_t *data) {
     if (data[8] == HID_THDR_DATA_INPUT) {
         switch (data[9]) {
 
@@ -863,7 +863,7 @@ void WiiRemote::readReport(uint8_t *data) {
     }
 } // readReport
 
-uint8_t WiiRemote::writeReport(uint8_t *data, uint8_t length) {
+uint8_t BluetoothUsbHostHandler::writeReport(uint8_t *data, uint8_t length) {
     uint8_t buf[MAX_BUFFER_SIZE] = {0};
 
     buf[0] = (uint8_t) (hci_handle_ & 0xff);    // HCI handle with PB,BC flag
@@ -888,7 +888,7 @@ uint8_t WiiRemote::writeReport(uint8_t *data, uint8_t length) {
                            (char *) buf);
 } // writeReport
 
-void WiiRemote::parseCalData(uint8_t *data) {
+void BluetoothUsbHostHandler::parseCalData(uint8_t *data) {
     //uint8_t nbytes = ((data[12] & 0xf0) >> 4) + 1;
     Accel_Cal_.offset.X = (data[15] << 2) | (data[18] & 0x30) >> 4;
     Accel_Cal_.offset.Y = (data[16] << 2) | (data[18] & 0x0c) >> 2;
@@ -906,7 +906,7 @@ void WiiRemote::parseCalData(uint8_t *data) {
     Serial.print("\r\n\tZG = "); DEBUG_PRINT(Accel_Cal_.gravity.Z, HEX);
 } // parseCalData
 
-void WiiRemote::parseAccel(uint8_t *data) {
+void BluetoothUsbHostHandler::parseAccel(uint8_t *data) {
     static uint8_t accel_cnt;
     uint8_t i = accel_cnt++ % ACCEL_AVERAGE_SIZE;
     Point3f_t accel_avg;
@@ -944,7 +944,7 @@ void WiiRemote::parseAccel(uint8_t *data) {
 #endif
 } // parseAccel
 
-void WiiRemote::parseButtons(uint8_t *data) {
+void BluetoothUsbHostHandler::parseButtons(uint8_t *data) {
     uint16_t buttons = (data[10] & 0x9f) | (data[11] & 0x9f) << 8;
     Report.Button.Left  = ((buttons & WIIREMOTE_LEFT) != 0);
     Report.Button.Right = ((buttons & WIIREMOTE_RIGHT) != 0);
@@ -963,7 +963,7 @@ void WiiRemote::parseButtons(uint8_t *data) {
 /************************************************************/
 /* WiiRemote HID Command (primitive)                        */
 /************************************************************/
-uint8_t WiiRemote::setLED(uint8_t led) {
+uint8_t BluetoothUsbHostHandler::setLED(uint8_t led) {
     uint8_t hid_buf[2];
     hid_buf[0] = OUTPUT_REPORT_LED;
     hid_buf[1] = led;
@@ -972,7 +972,7 @@ uint8_t WiiRemote::setLED(uint8_t led) {
     return writeReport((uint8_t *) hid_buf, 2);
 }
 
-uint8_t WiiRemote::setReportMode(uint8_t mode) {
+uint8_t BluetoothUsbHostHandler::setReportMode(uint8_t mode) {
     uint8_t hid_buf[3];
     hid_buf[0] = OUTPUT_REPORT_MODE;
     hid_buf[1] = 0x00;  // Wiimote will only send an report when the data has changed
@@ -983,7 +983,7 @@ uint8_t WiiRemote::setReportMode(uint8_t mode) {
     return writeReport((uint8_t *) hid_buf, 3);
 }
 
-uint8_t WiiRemote::readData(uint32_t offset, uint16_t size) {
+uint8_t BluetoothUsbHostHandler::readData(uint32_t offset, uint16_t size) {
     uint8_t hid_buf[7];
     hid_buf[0] = OUTPUT_REPORT_READ_DATA;
     hid_buf[1] = (uint8_t) ((offset & 0xff000000) >> 24);   /* TODO involve Rumble flag */
@@ -1001,16 +1001,16 @@ uint8_t WiiRemote::readData(uint32_t offset, uint16_t size) {
 /************************************************************/
 /* WiiRemote Command                                        */
 /************************************************************/
-uint8_t WiiRemote::readWiiRemoteCalibration(void) {
+uint8_t BluetoothUsbHostHandler::readWiiRemoteCalibration(void) {
     return readData(0x0016, 8);
 }
 
-bool WiiRemote::buttonPressed(uint16_t button) {
+bool BluetoothUsbHostHandler::buttonPressed(uint16_t button) {
     /* true while a button is pressed */
     return ((hid_buttons_ & button) != 0);
 }
 
-bool WiiRemote::buttonClicked(uint16_t button) {
+bool BluetoothUsbHostHandler::buttonClicked(uint16_t button) {
     /* true when a button is clicked */
     bool click = ((hid_buttons_click_ & button) != 0);
     hid_buttons_click_ &= ~button;  // clear "click" event
@@ -1021,7 +1021,7 @@ bool WiiRemote::buttonClicked(uint16_t button) {
 /************************************************************/
 /* etc                                                      */
 /************************************************************/
-Point3f_t WiiRemote::averagePoint3(Point3i_t *data, uint8_t size) {
+Point3f_t BluetoothUsbHostHandler::averagePoint3(Point3i_t *data, uint8_t size) {
     Point3f_t sum = {0.0, 0.0, 0.0};
 
     for (uint8_t i = 0; i < size; i++) {

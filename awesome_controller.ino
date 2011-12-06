@@ -1,16 +1,18 @@
 #include <SPI.h>
 #include "ps3_usb.h"
-#include "WiiRemote.h"
+#include "WiiController.h"
+#include "BluetoothUsbHostHandler.h"
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
 
-volatile int index;
-boolean buttons[16];
+volatile int buttonCyclesSinceLatch;
+int buttonStatePrintCounter = 0;
 
 PS3_USB PS3Game;
-WiiRemote wiiremote;
+BluetoothUsbHostHandler bluetoothUsbHostHandler;
+WiiController wiiController;
 
 void setup() {
   attachInterrupt(0, resetButtons, RISING);
@@ -26,21 +28,20 @@ void setup() {
   Serial.begin(9600);
 
   initPS3Controller();
-  initWiiController();
+  initBluetoothUsbHostHandler();
 }
 
 void initPS3Controller() {
-  Serial.println("PS3 controller about to be initialized");
+  Serial.println("PS3 USB library about to be initialized");
   PS3Game.init();
-  Serial.println("PS3 controller initialized");
+  Serial.println("PS3 USB library initialized");
 }
 
-void initWiiController() {
-  Serial.println("Wii controller about to be initialized");
-  wiiremote.init();
-  Serial.println("Wii controller initialized");
-
-  wiiremote.setBDAddressMode(BD_ADDR_INQUIRY);
+void initBluetoothUsbHostHandler() {
+  Serial.println("Bluetooth USB Host Handler to be initialized");
+  bluetoothUsbHostHandler.init();
+  Serial.println("Bluetooth USB Host Handler initialized");
+  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
 void loop() {
@@ -50,43 +51,49 @@ void loop() {
 
   // eventually: for each wiimote, read their state and store.
   // right now only works for the one controller that is plugged in
-  wiiremote.task(&readButtons);
+  bluetoothUsbHostHandler.task(&readButtons);
+
+  buttonStatePrintCounter++;
+  if (buttonStatePrintCounter > 250) {
+    wiiController.printButtonStates();
+    buttonStatePrintCounter = 0;
+  }
 }
 
 void readButtons(void){
-  buttons[0] = wiiremote.buttonPressed(WIIREMOTE_TWO);
-  buttons[1] = wiiremote.buttonPressed(WIIREMOTE_ONE);
-  buttons[2] = wiiremote.buttonPressed(WIIREMOTE_MINUS);
-  buttons[3] = wiiremote.buttonPressed(WIIREMOTE_PLUS);
-  buttons[4] = wiiremote.buttonPressed(WIIREMOTE_RIGHT);
-  buttons[5] = wiiremote.buttonPressed(WIIREMOTE_LEFT);
-  buttons[6] = wiiremote.buttonPressed(WIIREMOTE_UP);
-  buttons[7] = wiiremote.buttonPressed(WIIREMOTE_DOWN);
-  buttons[8] = wiiremote.buttonPressed(WIIREMOTE_A);
+  wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
+  wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
+  wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_MINUS);
+  wiiController.buttons[3] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_PLUS);
+  wiiController.buttons[4] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_RIGHT);
+  wiiController.buttons[5] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_LEFT);
+  wiiController.buttons[6] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_UP);
+  wiiController.buttons[7] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_DOWN);
+  wiiController.buttons[8] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_A);
 }
 
 void readControllerState() {
-  PS3Game.task();
-  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
-    if (PS3Game.buttonChanged()){
-      buttons[0] = PS3Game.buttonPressed(buCross);
-      buttons[1] = PS3Game.buttonPressed(buSquare);
-      buttons[2] = PS3Game.buttonPressed(buSelect);
-      buttons[3] = PS3Game.buttonPressed(buStart);
-      buttons[4] = PS3Game.buttonPressed(buUp);
-      buttons[5] = PS3Game.buttonPressed(buDown);
-      buttons[6] = PS3Game.buttonPressed(buLeft);
-      buttons[7] = PS3Game.buttonPressed(buRight);
-      buttons[8] = PS3Game.buttonPressed(buCircle);
-      buttons[9] = PS3Game.buttonPressed(buTriangle);
-      buttons[10] = PS3Game.buttonPressed(buL1);
-      buttons[11] = PS3Game.buttonPressed(buR1);
-      buttons[12] = false;
-      buttons[13] = false;
-      buttons[14] = false;
-      buttons[15] = false;
-    }
-  }
+//  PS3Game.task();
+//  if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
+//    if (PS3Game.buttonChanged()){
+//      buttons[0] = PS3Game.buttonPressed(buCross);
+//      buttons[1] = PS3Game.buttonPressed(buSquare);
+//      buttons[2] = PS3Game.buttonPressed(buSelect);
+//      buttons[3] = PS3Game.buttonPressed(buStart);
+//      buttons[4] = PS3Game.buttonPressed(buUp);
+//      buttons[5] = PS3Game.buttonPressed(buDown);
+//      buttons[6] = PS3Game.buttonPressed(buLeft);
+//      buttons[7] = PS3Game.buttonPressed(buRight);
+//      buttons[8] = PS3Game.buttonPressed(buCircle);
+//      buttons[9] = PS3Game.buttonPressed(buTriangle);
+//      buttons[10] = PS3Game.buttonPressed(buL1);
+//      buttons[11] = PS3Game.buttonPressed(buR1);
+//      buttons[12] = false;
+//      buttons[13] = false;
+//      buttons[14] = false;
+//      buttons[15] = false;
+//    }
+//  }
 }
 
 // not needed at this moment (since NES ~= SNES) but might be a good starting point
@@ -109,15 +116,15 @@ void readControllerState() {
 //}
 
 void snesKeyDown() {
-  if (buttons[index] == 0) {
+  if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
     PORTD |= B00010000; // turns signal to high
   } else {
     PORTD &= B11101111; // turns signal to low
   }
-  index++;
+  buttonCyclesSinceLatch++;
 }
 
 void resetButtons() {
-  index = 0;
+  buttonCyclesSinceLatch = 0;
   snesKeyDown();
 }
