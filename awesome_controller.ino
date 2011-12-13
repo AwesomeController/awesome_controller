@@ -17,9 +17,9 @@ int buttonStatePrintCounter = 0;
 
 // Dumb toggle so we can actually fake buttons
 // These used to be 0x04 which I think is B00000100, but if something breaks, change these
-#define N64_HIGH DDRD &= ~B00000100
-#define N64_LOW DDRD |= B00000100
-#define N64_QUERY (PIND & B00000100)
+#define SET_N64_PIN_HIGH DDRD &= ~B00000100
+#define SET_N64_PIN_LOW DDRD |= B00000100
+#define QUERY_N64_PIN (PIND & B00000100)
 boolean oddN64ButtonCycle = true;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
 
@@ -190,7 +190,7 @@ void receiveN64CommandPacket()
 read_loop:
     timeout1 = 0xff;
     // wait for line to go low
-    while (N64_QUERY) {
+    while (QUERY_N64_PIN) {
         // Totally safe infinite while loop
         // Trust us. We're doctors.
         // Won't send your arduino in an infinite loop if you unplug the controller. 100 True statement.
@@ -204,7 +204,7 @@ read_loop:
                   "nop\nnop\nnop\nnop\nnop\n"  
                   "nop\nnop\nnop\nnop\nnop\n"  
             );
-    *bitbin = N64_QUERY;
+    *bitbin = QUERY_N64_PIN;
     ++bitbin;
     --bitcount;
     if (bitcount == 0) {
@@ -214,7 +214,7 @@ read_loop:
     // wait for line to go high again
     // it may already be high, so this should just drop through
     timeout2 = 0x3f;
-    while (!N64_QUERY) {
+    while (!QUERY_N64_PIN) {
         // Totally safe infinite while loop
         // Trust us. We're doctors.
         // Won't send your arduino in an infinite loop if you unplug the controller. 100 True statement.
@@ -253,7 +253,7 @@ inner_loop:
         {
             // Starting a bit, set the line low
             asm volatile (";Setting line to low");
-            N64_LOW; // 1 op, 2 cycles
+            SET_N64_PIN_LOW; // 1 op, 2 cycles
 
             asm volatile (";branching");
             if (*buffer >> 7) {
@@ -264,7 +264,7 @@ inner_loop:
                 asm volatile ("nop\nnop\nnop\nnop\nnop\n");
                 
                 asm volatile (";Setting line to high");
-                N64_HIGH;
+                SET_N64_PIN_HIGH;
 
                 // nop block 2
                 // we'll wait only 2us to sync up with both conditions
@@ -292,7 +292,7 @@ inner_loop:
                               "nop\n");
 
                 asm volatile (";Setting line to high");
-                N64_HIGH;
+                SET_N64_PIN_HIGH;
 
                 // wait for 1us
                 asm volatile ("; end of conditional branch, need to wait 1us more before next bit");
@@ -330,13 +330,13 @@ inner_loop:
     // send a single stop (1) bit
     // nop block 5
     asm volatile ("nop\nnop\nnop\nnop\n");
-    N64_LOW;
+    SET_N64_PIN_LOW;
     // wait 1 us, 16 cycles, then raise the line 
     // 16-2=14
     // nop block 6
     asm volatile ("nop\nnop\nnop\nnop\nnop\n"
                   "nop\nnop\nnop\nnop\nnop\n"  
                   "nop\nnop\nnop\nnop\n");
-    N64_HIGH;
+    SET_N64_PIN_HIGH;
 }
 
