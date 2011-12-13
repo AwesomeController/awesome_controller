@@ -120,8 +120,7 @@ inner_loop:
     SET_N64_PIN_HIGH;
 }
 
-void receiveN64CommandPacket()
-{
+void receiveN64CommandPacket() {
     // listen for the expected 8 bytes of data back from the controller and
     // store it in N64RawCommandPacket, one bit per byte
     asm volatile (";Starting to listen");
@@ -168,8 +167,7 @@ read_loop:
 
 }
 
-void handleN64CommandCycle()
-{
+void handleN64CommandCycle() {
     unsigned char command[] = { 0x90, 0x00, 0x00, 0x00 }; // A + Start
     if (oddN64ButtonCycle == 0) {
         command[0] = 0x00; // None pressed
@@ -181,24 +179,20 @@ void handleN64CommandCycle()
     sendN64ButtonsResponse(command, 4);
     // end of time sensitive code
     oddN64ButtonCycle = !oddN64ButtonCycle;
-    Serial.println("cycle over");
 }
 
-N64::N64()
-{
+N64::N64() {
 }
 
-N64::~N64()
-{
+N64::~N64() {
 }
 
-void N64::init()
-{
+void N64::init() {
     Serial.println("in N64 constuctor");
     oddN64ButtonCycle = true;
     DATA_PIN = 2;
-    digitalWrite(DATA_PIN, LOW);
     pinMode(DATA_PIN, INPUT);
+    digitalWrite(DATA_PIN, LOW);
     attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
     Serial.println("done with N64 constructor");
 }
