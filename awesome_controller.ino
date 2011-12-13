@@ -31,8 +31,7 @@ PS3_USB PS3Game;
 BluetoothUsbHostHandler bluetoothUsbHostHandler;
 WiiController wiiController;
 
-void setup()
-{
+void setup() {
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
@@ -50,29 +49,27 @@ void setup()
     } else if (CONSOLE_CHOICE == CONSOLE_N64) {
         Serial.begin(9600);
         DATA_PIN = 2;
-        digitalWrite(DATA_PIN, LOW);
         pinMode(DATA_PIN, INPUT);
+        digitalWrite(DATA_PIN, LOW);
         attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
+        Serial.println("N64 setup over");
     }
 }
 
-void initPS3Controller()
-{
+void initPS3Controller() {
   Serial.println("PS3 USB library about to be initialized");
   PS3Game.init();
   Serial.println("PS3 USB library initialized");
 }
 
-void initBluetoothUsbHostHandler()
-{
+void initBluetoothUsbHostHandler() {
   Serial.println("Bluetooth USB Host Handler to be initialized");
   bluetoothUsbHostHandler.init();
   Serial.println("Bluetooth USB Host Handler initialized");
   bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
-void loop()
-{
+void loop() {
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
         // eventually: for each controller, read their state and store.
         // right now only works for the one controller that is plugged in
@@ -88,14 +85,9 @@ void loop()
           buttonStatePrintCounter = 0;
         }
     }
-    if (handledInterrupt) {
-      Serial.println("Handled interrupt");
-      handledInterrupt = 0;
-    }
 }
 
-void readButtons(void)
-{
+void readButtons(void) {
     wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
     wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
     wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_MINUS);
@@ -107,8 +99,7 @@ void readButtons(void)
     wiiController.buttons[8] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_A);
 }
 
-void readControllerState()
-{
+void readControllerState() {
 //    PS3Game.task();
 //    if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
 //        if (PS3Game.buttonChanged()){
@@ -152,8 +143,7 @@ void readControllerState()
 //    }
 //}
 
-void snesKeyDown()
-{
+void snesKeyDown() {
     if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
         PORTD |= B00010000; // turns signal to high
     } else {
@@ -162,14 +152,12 @@ void snesKeyDown()
     buttonCyclesSinceLatch++;
 }
 
-void resetButtons()
-{
+void resetButtons() {
     buttonCyclesSinceLatch = 0;
     snesKeyDown();
 }
 
-void handleN64CommandCycle()
-{
+void handleN64CommandCycle() {
     unsigned char command[] = { 0x90,0x00,0x00,0x00 }; // A + Start
     if (oddN64ButtonCycle == 0) {
         command[0] = 0x00; // None pressed
@@ -181,7 +169,6 @@ void handleN64CommandCycle()
     sendN64ButtonsResponse(command, 4);
     // end of time sensitive code
     oddN64ButtonCycle = !oddN64ButtonCycle;
-    Serial.println("cycle over");
 }
 
 void receiveN64CommandPacket()
