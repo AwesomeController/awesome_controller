@@ -3,9 +3,9 @@
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
 
-#define CONSOLE_NES 1
-#define CONSOLE_SNES 1
-#define CONSOLE_N64 3
+#define CONSOLE_NES  1
+#define CONSOLE_SNES 2
+#define CONSOLE_N64  3
 #define CONSOLE_CHOICE CONSOLE_N64
 
 int LATCH_PIN = 2;
@@ -32,7 +32,7 @@ BluetoothUsbHostHandler bluetoothUsbHostHandler;
 WiiController wiiController;
 
 void setup() {
-	if (CONSOLE_CHOICE == CONSOLE_NES) {
+	if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
 		attachInterrupt(0, resetButtons, RISING);
 		attachInterrupt(1, snesKeyDown, RISING);
 
@@ -70,7 +70,7 @@ void initBluetoothUsbHostHandler() {
 }
 
 void loop() {
-  if (CONSOLE_CHOICE == CONSOLE_NES) {
+  if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
 	  // eventually: for each controller, read their state and store.
 	  // right now only works for the one controller that is plugged in
 	  readControllerState();
