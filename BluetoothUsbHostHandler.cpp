@@ -1036,6 +1036,3 @@ Point3f_t BluetoothUsbHostHandler::averagePoint3(Point3i_t *data, uint8_t size) 
 
     return sum;
 }
-
-
-// vim: sts=4 sw=4 ts=4 et cin fdm=marker cms=//%s syntax=arduino
