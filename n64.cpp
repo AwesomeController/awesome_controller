@@ -188,11 +188,9 @@ N64::~N64() {
 }
 
 void N64::init() {
-    Serial.println("in N64 constuctor");
     oddN64ButtonCycle = true;
     DATA_PIN = 2;
     pinMode(DATA_PIN, INPUT);
     digitalWrite(DATA_PIN, LOW);
     attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
-    Serial.println("done with N64 constructor");
 }

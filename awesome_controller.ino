@@ -27,17 +27,22 @@ void setup()
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
-
+        
+        // Setup clock latch and data pins for SNES/NES
         pinMode(CLOCK_PIN, INPUT);
         pinMode(LATCH_PIN, INPUT);
         pinMode(DATA_PIN, OUTPUT);
 
+        //Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
         SPI.begin();
 
         initPS3Controller();
         initBluetoothUsbHostHandler();
     } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+        SPI.begin();  
+        initPS3Controller();
+        initBluetoothUsbHostHandler();
         n64system.init();
     }
 }
@@ -67,8 +72,22 @@ void loop() {
 
         buttonStatePrintCounter++;
         if (buttonStatePrintCounter > 250) {
-          wiiController.printButtonStates();
-          buttonStatePrintCounter = 0;
+            wiiController.printButtonStates();
+            buttonStatePrintCounter = 0;
+        }
+    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+        // eventually: for each controller, read their state and store.
+        // right now only works for the one controller that is plugged in
+        readControllerState();
+
+        // eventually: for each wiimote, read their state and store.
+        // right now only works for the one controller that is plugged in
+        bluetoothUsbHostHandler.task(&readButtons);
+
+        buttonStatePrintCounter++;
+        if (buttonStatePrintCounter > 250) {
+            wiiController.printButtonStates();
+            buttonStatePrintCounter = 0;
         }
     }
 }
