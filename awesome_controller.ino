@@ -49,15 +49,15 @@ void setup()
 }
 
 void initPS3Controller() {
-  Serial.println("PS3 USB library about to be initialized");
+  //Serial.println("PS3 USB library about to be initialized");
   PS3Game.init();
-  Serial.println("PS3 USB library initialized");
+  //Serial.println("PS3 USB library initialized");
 }
 
 void initBluetoothUsbHostHandler() {
-  Serial.println("Bluetooth USB Host Handler to be initialized");
+  //Serial.println("Bluetooth USB Host Handler to be initialized");
   bluetoothUsbHostHandler.init();
-  Serial.println("Bluetooth USB Host Handler initialized");
+  //Serial.println("Bluetooth USB Host Handler initialized");
   bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
@@ -80,7 +80,7 @@ void loop() {
     } else if (CONSOLE_CHOICE == CONSOLE_N64) {
         // eventually: for each controller, read their state and store.
         // right now only works for the one controller that is plugged in
-        readControllerState();
+        //readControllerState();
 
         // eventually: for each wiimote, read their state and store.
         // right now only works for the one controller that is plugged in
@@ -91,7 +91,6 @@ void loop() {
             //wiiController.printButtonStates();
             buttonStatePrintCounter = 0;
         }
-        PORTD |= B00010000; // red led
     }
 }
 
@@ -104,7 +103,18 @@ void readButtons(void) {
     wiiController.buttons[5] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_LEFT);
     wiiController.buttons[6] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_UP);
     wiiController.buttons[7] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_DOWN);
-    wiiController.buttons[8] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_A);
+    if (wiiController.buttons[0] ||
+        wiiController.buttons[1] ||
+        wiiController.buttons[2] ||
+        wiiController.buttons[3] ||
+        wiiController.buttons[4] ||
+        wiiController.buttons[5] ||
+        wiiController.buttons[6] ||
+        wiiController.buttons[7]) {
+        PORTD |=  B00010000; // red led
+    } else {
+        PORTD &= ~B00010000; // red led
+    }
 }
 
 void readControllerState() {

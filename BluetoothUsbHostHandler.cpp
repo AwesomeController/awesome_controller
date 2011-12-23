@@ -187,7 +187,7 @@ void BluetoothUsbHostHandler::initBTController(void) {
                             DEV_DESCR_LEN,
                             (char *) buf);
     if (rcode) {
-        Serial.print("\r\nDevice Descriptor Error: ");
+        //Serial.print("\r\nDevice Descriptor Error: ");
         DEBUG_PRINT(rcode, HEX);
         return;
     }
@@ -195,10 +195,10 @@ void BluetoothUsbHostHandler::initBTController(void) {
     device_descriptor = (USB_DEVICE_DESCRIPTOR *) &buf;
     if ((device_descriptor->idVendor != CSR_VID) ||
         (device_descriptor->idProduct != CSR_PID)) {
-        Serial.print("\r\nWrong USB Device ID: ");
-        Serial.print("\r\n\t Vendor ID = ");
+        //Serial.print("\r\nWrong USB Device ID: ");
+        //Serial.print("\r\n\t Vendor ID = ");
         DEBUG_PRINT(device_descriptor->idVendor, HEX);
-        Serial.print("\r\n\tProduct ID = ");
+        //Serial.print("\r\n\tProduct ID = ");
         DEBUG_PRINT(device_descriptor->idProduct, HEX);
         return;
     }
@@ -210,7 +210,7 @@ void BluetoothUsbHostHandler::initBTController(void) {
                         ep_record_[ CONTROL_PIPE ].epAddr,
                         BT_CONFIGURATION);
     if (rcode) {
-        Serial.print("\r\nDevice Configuration Error: ");
+        //Serial.print("\r\nDevice Configuration Error: ");
         DEBUG_PRINT(rcode, HEX);
         return;
     }
@@ -218,7 +218,7 @@ void BluetoothUsbHostHandler::initBTController(void) {
 
     //LCD.clear();
 
-    Serial.print("\r\nCSR Initialized");
+    //Serial.print("\r\nCSR Initialized");
     //delay(200);
 } // initBTController
 
@@ -241,7 +241,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
 
       case HCI_RESET_STATE:
         if (hci_command_complete) {
-            Serial.print("\r\nHCI Reset complete");
+            //Serial.print("\r\nHCI Reset complete");
             switch (bdaddr_acquisition_mode_) {
               case BD_ADDR_FIXED:
                 hci_state_ = HCI_READY_CONNECT_STATE;
@@ -259,7 +259,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
             }
         }
         if (hci_timeout) {
-            Serial.print("\r\nNo response to HCI Reset");
+            //Serial.print("\r\nNo response to HCI Reset");
             hci_state_ = HCI_INIT_STATE;
             hci_counter_ = 10;
         }
@@ -267,7 +267,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
 
       case HCI_INQUIRY_STATE:
         if (hci_inquiry_result) {
-            Serial.print("\r\nHCI Inquiry responded");
+            //Serial.print("\r\nHCI Inquiry responded");
             hci_inquiry_cancel();
             hci_state_ = HCI_READY_CONNECT_STATE;
             hci_counter_ = 10000;
@@ -277,7 +277,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
       case HCI_READY_CONNECT_STATE:
         if (hci_command_complete) {
             if (hci_inquiry_result) {
-                Serial.print("\r\nHCI Inquiry complete");
+                //Serial.print("\r\nHCI Inquiry complete");
             }
             hci_connect(wiiremote_bdaddr_); // connect to Wiimote
             hci_state_ = HCI_CONNECT_OUT_STATE;
@@ -288,7 +288,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
       case HCI_CONNECT_OUT_STATE:
         if (hci_connect_complete) {
             if(hci_connect_ok) {
-                Serial.print("\r\nConnected to Wiimote");
+                //Serial.print("\r\nConnected to Wiimote");
                 hci_state_ = HCI_CONNECTED_STATE;
                 l2cap_state_ = L2CAP_INIT_STATE;
                 wiiremote_status_ |= WIIREMOTE_STATE_CONNECTED;
@@ -306,7 +306,7 @@ void BluetoothUsbHostHandler::HCI_task(void) {
 
       case HCI_CONNECTED_STATE:
         if (hci_disconn_complete) {
-            Serial.print("\r\nWiimote Disconnected");
+            //Serial.print("\r\nWiimote Disconnected");
             hci_state_ = HCI_INIT_STATE;
             hci_counter_ = 10;
             l2cap_state_ = L2CAP_DOWN_STATE;
@@ -336,8 +336,8 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
         /*  buf[0] = Event Code                            */
         /*  buf[1] = Parameter Total Length                */
         /*  buf[n] = Event Parameters based on each event  */
-        Serial.print("\r\nHCI event = 0x");
-        Serial.print(buf[0], HEX);
+        //Serial.print("\r\nHCI event = 0x");
+        //Serial.print(buf[0], HEX);
         switch (buf[0]) {   // switch on event type
           case HCI_EVENT_COMMAND_COMPLETE:
             hci_event_flag_ |= HCI_FLAG_COMMAND_COMPLETE;
@@ -347,10 +347,10 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
             hci_event_flag_ |= HCI_FLAG_INQUIRY_RESULT;
 
             /* assume that Num_Responses is 1 */
-            Serial.print("\r\nFound WiiRemote BD_ADDR:\t");
+            //Serial.print("\r\nFound WiiRemote BD_ADDR:\t");
             for (uint8_t i = 0; i < 6; i++) {
                 wiiremote_bdaddr_[5-i] = (uint8_t) buf[3+i];
-                Serial.print(wiiremote_bdaddr_[5-i], HEX);
+                //Serial.print(wiiremote_bdaddr_[5-i], HEX);
             }
             break;
 
@@ -363,14 +363,14 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
 
 #if WIIREMOTE_DEBUG
             if (buf[2]) {   // show status on serial if not OK
-                Serial.print("\r\nHCI Command Failed: ");
-                Serial.print("\r\n\t             Status = ");
+                //Serial.print("\r\nHCI Command Failed: ");
+                //Serial.print("\r\n\t             Status = ");
                 DEBUG_PRINT(buf[2], HEX);
 
-                Serial.print("\r\n\tCommand_OpCode(OGF) = ");
+                //Serial.print("\r\n\tCommand_OpCode(OGF) = ");
                 DEBUG_PRINT( ((buf[5] & 0xFC) >> 2), HEX);
 
-                Serial.print("\r\n\tCommand_OpCode(OCF) = ");
+                //Serial.print("\r\n\tCommand_OpCode(OCF) = ");
                 DEBUG_PRINT( (buf[5] & 0x03), HEX);
                 DEBUG_PRINT(buf[4], HEX);
             }
@@ -389,11 +389,11 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
 
           case HCI_EVENT_NUM_COMPLETED_PKT:
 #if WIIREMOTE_DEBUG
-            Serial.print("\r\nHCI Number Of Completed Packets Event: ");
-            Serial.print("\r\n\tNumber_of_Handles = 0x");
+            //Serial.print("\r\nHCI Number Of Completed Packets Event: ");
+            //Serial.print("\r\n\tNumber_of_Handles = 0x");
             DEBUG_PRINT(buf[2], HEX);
             for (uint8_t i = 0; i < buf[2]; i++) {
-                Serial.print("\r\n\tConnection_Handle = 0x");
+                //Serial.print("\r\n\tConnection_Handle = 0x");
                 DEBUG_PRINT((buf[3+i] | ((buf[4+i] & 0x0F) << 8)), HEX);
             }
 #endif
@@ -404,17 +404,17 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
 
           case HCI_EVENT_DISCONN_COMPLETE:
             hci_event_flag_ |= HCI_FLAG_DISCONN_COMPLETE;
-            Serial.print("\r\nHCI Disconnection Complete Event: ");
-            Serial.print("\r\n\t           Status = 0x");
+            //Serial.print("\r\nHCI Disconnection Complete Event: ");
+            //Serial.print("\r\n\t           Status = 0x");
             DEBUG_PRINT(buf[2], HEX);
-            Serial.print("\r\n\tConnection_Handle = 0x");
+            //Serial.print("\r\n\tConnection_Handle = 0x");
             DEBUG_PRINT((buf[3] | ((buf[4] & 0x0F) << 8)), HEX);
-            Serial.print("\r\n\t           Reason = 0x");
+            //Serial.print("\r\n\t           Reason = 0x");
             DEBUG_PRINT(buf[5], HEX);
             break;
 
           default:
-            Serial.print("\r\nUnmanaged Event: 0x");
+            //Serial.print("\r\nUnmanaged Event: 0x");
             DEBUG_PRINT(buf[0], HEX);
             break;
         }   // switch (buf[0])
@@ -657,8 +657,8 @@ void BluetoothUsbHostHandler::L2CAP_event_task(void) {
     if (!rcode) {
         if (acl_handle_ok) {
             if (l2cap_control) {
-                Serial.print("\r\nL2CAP Signaling Command = 0x");
-                Serial.print(buf[8], HEX);
+                //Serial.print("\r\nL2CAP Signaling Command = 0x");
+                //Serial.print(buf[8], HEX);
                 if (l2cap_connection_response) {
                     if (l2cap_connection_success) {
                         if ((buf[14] | (buf[15] << 8)) == command_scid_) {
@@ -856,7 +856,7 @@ void BluetoothUsbHostHandler::readReport(uint8_t *data) {
             break;
 
           default:
-            Serial.print("\r\nUnmanaged Input Report: ");
+            //Serial.print("\r\nUnmanaged Input Report: ");
             DEBUG_PRINT(data[9], HEX);
             break;
         }
@@ -897,13 +897,13 @@ void BluetoothUsbHostHandler::parseCalData(uint8_t *data) {
     Accel_Cal_.gravity.Y = (data[20] << 2) | (data[22] & 0x0c) >> 2;
     Accel_Cal_.gravity.Z = (data[21] << 2) | (data[22] & 0x03);
 
-    Serial.print("\r\nCalibration Data");
-    Serial.print("\r\n\tX0 = "); DEBUG_PRINT(Accel_Cal_.offset.X, HEX);
-    Serial.print("\r\n\tY0 = "); DEBUG_PRINT(Accel_Cal_.offset.Y, HEX);
-    Serial.print("\r\n\tZ0 = "); DEBUG_PRINT(Accel_Cal_.offset.Z, HEX);
-    Serial.print("\r\n\tXG = "); DEBUG_PRINT(Accel_Cal_.gravity.X, HEX);
-    Serial.print("\r\n\tYG = "); DEBUG_PRINT(Accel_Cal_.gravity.Y, HEX);
-    Serial.print("\r\n\tZG = "); DEBUG_PRINT(Accel_Cal_.gravity.Z, HEX);
+    //Serial.print("\r\nCalibration Data");
+    //Serial.print("\r\n\tX0 = "); DEBUG_PRINT(Accel_Cal_.offset.X, HEX);
+    //Serial.print("\r\n\tY0 = "); DEBUG_PRINT(Accel_Cal_.offset.Y, HEX);
+    //Serial.print("\r\n\tZ0 = "); DEBUG_PRINT(Accel_Cal_.offset.Z, HEX);
+    //Serial.print("\r\n\tXG = "); DEBUG_PRINT(Accel_Cal_.gravity.X, HEX);
+    //Serial.print("\r\n\tYG = "); DEBUG_PRINT(Accel_Cal_.gravity.Y, HEX);
+    //Serial.print("\r\n\tZG = "); DEBUG_PRINT(Accel_Cal_.gravity.Z, HEX);
 } // parseCalData
 
 void BluetoothUsbHostHandler::parseAccel(uint8_t *data) {

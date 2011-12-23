@@ -5,13 +5,16 @@
 
 extern WiiController wiiController;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
+volatile bool oddButton = false;
+volatile unsigned char command[] = { 0x80, 0x00, 0x00, 0x00 };
+volatile int counter = 0;
 
 /**
  * This sends the given byte sequence to the controller.
  * Length must be at least 1.
  * Oh, it destroys the buffer passed in as it writes it. My B guys.
  */
-void sendN64ButtonsResponse(unsigned char *buffer, char length) {
+void sendN64ButtonsResponse(volatile unsigned char *buffer, char length) {
 
     // Send these bytes
     char bits;
@@ -112,10 +115,7 @@ inner_loop:
     // send a single stop (1) bit
     // nop block 5
     asm volatile ("nop\nnop\nnop\nnop\n");
-// did not kill canary
     SET_N64_PIN_LOW;
-
-// kills canary
 
     // wait 1 us, 16 cycles, then raise the line
     // 16-2=14
@@ -126,14 +126,14 @@ inner_loop:
     SET_N64_PIN_HIGH;
 }
 
-void receiveN64CommandPacket() {
+bool receiveN64CommandPacket() {
     // listen for the expected 8 bytes of data back from the controller and
     // store it in N64RawCommandPacket, one bit per byte
     asm volatile (";Starting to listen");
 //I AM HERE
     unsigned char timeout1;
     unsigned char timeout2;
-    char bitsRead = 0;
+    char bitsToRead = 9;
     unsigned char *commandPacket = N64RawCommandPacket;
 
     // Again, using gotos here to make the assembly more predictable and
@@ -144,11 +144,11 @@ read_loop:
     // wait for line to go low
     // otherwise, wait a little and then return
     while (QUERY_N64_PIN) {
-        timeout1--;
-        if (timeout1 == 0) {
-            // not ready to start loop if we didn't get a low signal
-            return;
-        }
+        //timeout1--;
+//        if (!--timeout1) {
+//            // not ready to start loop if we didn't get a low signal
+//            return false;
+//        }
     }
 
     // wait approx 2us and poll the line
@@ -166,9 +166,9 @@ read_loop:
     // fully populated.
     *commandPacket = QUERY_N64_PIN;
     ++commandPacket;
-    bitsRead++;
-    if (bitsRead == 9) {  // counting up to 9 (number of bits)
-        return;
+    --bitsToRead;
+    if (bitsToRead == 0) {  // counting down from 9 (number of bits)
+        return true;
     }
 
     // wait for line to go high again
@@ -176,28 +176,43 @@ read_loop:
     timeout2 = 0x3f;
 
     while (!QUERY_N64_PIN) {
-        timeout2--;
-        if (timeout2 == 0) {
-            // not ready to end loop if we didn't get a high signal
-            return;
-        }
+//        timeout2--;
+//        if (!--timeout2) {
+//            // not ready to end loop if we didn't get a high signal
+//            return false;
+//        }
     }
 
     goto read_loop;
 }
 
 void handleN64CommandCycle() {
-    //noInterrupts();
-    unsigned char command[] = { 0x00, 0x00, 0x00, 0x00 }; // A + Start
-    if (wiiController.buttons[0] == 1) {
-        command[0] = 0x80; // Start pressed
-    } else {
-        command[0] = 0x00; // None pressed
+    oddButton = !oddButton;
+    if (oddButton) {
+        return;
     }
-    receiveN64CommandPacket();
-    // send those 3 bytes
-    sendN64ButtonsResponse(command, 4);
+    //if (wiiController.buttons[0] == 1) {
+    //    command[0] = 0x80; // Start pressed
+    //} else {
+    //    command[0] = 0x00; // None pressed
+    //}
+
+    // begin time sensitive code
+    if (receiveN64CommandPacket()) {
+        sendN64ButtonsResponse(command, 4);
+    }
     // end of time sensitive code
+
+    if (wiiController.buttons[3]) {
+        command[0] = 0x80;
+        PORTD |= B00001000; // canary led
+    } else {
+        command[0] = 0x00;
+        PORTD &= B11110111; // canary led
+    }
+    command[1] = 0x00;
+    command[2] = 0x00;
+    command[3] = 0x00;
 }
 
 N64::N64() {
@@ -217,7 +232,7 @@ void N64::init() {
 
     // canary LED
     DDRD  |= B00001000;
-    PORTD |= B00001000;
+    //PORTD |= B00001000;
 
     attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
 }

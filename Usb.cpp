@@ -100,8 +100,8 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     rcode = dispatchPkt( tokSETUP, ep, USB_NAK_LIMIT );            //dispatch packet
     //Serial.println("Setup packet");   //DEBUG
     if( rcode ) {                                   //return HRSLT if not zero
-        Serial.print("Setup packet error: ");
-        Serial.print( rcode, HEX );                                          
+        //Serial.print("Setup packet error: ");
+        //Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     //Serial.println( direction, HEX ); 
@@ -109,8 +109,8 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
         rcode = ctrlData( addr, ep, nbytes, dataptr, direction );
     }
     if( rcode ) {   //return error
-        Serial.print("Data packet error: ");
-        Serial.print( rcode, HEX );                                          
+        //Serial.print("Data packet error: ");
+        //Serial.print( rcode, HEX );                                          
         return( rcode );
     }
     rcode = ctrlStatus( ep, direction );                //status stage
