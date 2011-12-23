@@ -12,6 +12,7 @@ unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
  * Oh, it destroys the buffer passed in as it writes it. My B guys.
  */
 void sendN64ButtonsResponse(unsigned char *buffer, char length) {
+
     // Send these bytes
     char bits;
 
@@ -111,7 +112,11 @@ inner_loop:
     // send a single stop (1) bit
     // nop block 5
     asm volatile ("nop\nnop\nnop\nnop\n");
+// did not kill canary
     SET_N64_PIN_LOW;
+
+// kills canary
+
     // wait 1 us, 16 cycles, then raise the line
     // 16-2=14
     // nop block 6
@@ -191,9 +196,8 @@ void handleN64CommandCycle() {
     }
     receiveN64CommandPacket();
     // send those 3 bytes
-    //sendN64ButtonsResponse(command, 4);
+    sendN64ButtonsResponse(command, 4);
     // end of time sensitive code
-    PORTD |= B00010000; // red led
 }
 
 N64::N64() {
@@ -203,12 +207,9 @@ N64::~N64() {
 }
 
 void N64::init() {
-    Serial.println("in N64 init");
     DATA_PIN = 2;
     pinMode(DATA_PIN, INPUT);
     digitalWrite(DATA_PIN, LOW);
-    attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
-    Serial.println("done with N64 init");
 
     // debugging LED
     DDRD  |= B00010000;
@@ -217,4 +218,6 @@ void N64::init() {
     // canary LED
     DDRD  |= B00001000;
     PORTD |= B00001000;
+
+    attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
 }

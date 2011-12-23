@@ -62,7 +62,7 @@ void initBluetoothUsbHostHandler() {
 }
 
 void loop() {
-    Serial.println("at top of loop");
+    //Serial.println("at top of loop");
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
         // eventually: for each controller, read their state and store.
         // right now only works for the one controller that is plugged in
@@ -88,10 +88,10 @@ void loop() {
 
         buttonStatePrintCounter++;
         if (buttonStatePrintCounter > 250) {
-            wiiController.printButtonStates();
+            //wiiController.printButtonStates();
             buttonStatePrintCounter = 0;
         }
-
+        PORTD |= B00010000; // red led
     }
 }
 
