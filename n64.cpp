@@ -1,8 +1,9 @@
 #include <SPI.h>
 #include <Arduino.h>
 #include "n64.h"
+#include "WiiController.h"
 
-boolean oddN64ButtonCycle = true;
+extern WiiController wiiController;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
 
 /**
@@ -124,21 +125,27 @@ void receiveN64CommandPacket() {
     // listen for the expected 8 bytes of data back from the controller and
     // store it in N64RawCommandPacket, one bit per byte
     asm volatile (";Starting to listen");
+//I AM HERE
     unsigned char timeout1;
     unsigned char timeout2;
-    char bitcount = 9;  // should be 9 for 9 bits
-    unsigned char *bitbin = N64RawCommandPacket;
+    char bitsRead = 0;
+    unsigned char *commandPacket = N64RawCommandPacket;
 
     // Again, using gotos here to make the assembly more predictable and
     // optimization easier (please don't kill me)
 read_loop:
     timeout1 = 0xff;
+
     // wait for line to go low
+    // otherwise, wait a little and then return
     while (QUERY_N64_PIN) {
-        // Totally safe infinite while loop
-        // Trust us. We're doctors.
-        // Won't send your arduino in an infinite loop if you unplug the controller. 100 True statement.
+        timeout1--;
+        if (timeout1 == 0) {
+            // not ready to start loop if we didn't get a low signal
+            return;
+        }
     }
+
     // wait approx 2us and poll the line
     asm volatile (
                   "nop\nnop\nnop\nnop\nnop\n"
@@ -148,37 +155,45 @@ read_loop:
                   "nop\nnop\nnop\nnop\nnop\n"
                   "nop\nnop\nnop\nnop\nnop\n"
             );
-    *bitbin = QUERY_N64_PIN;
-    ++bitbin;
-    --bitcount;
-    if (bitcount == 0) {
+
+    // We found another bit, so we should decrease the amount we
+    // are looking for. If we found them all, great, our array is
+    // fully populated.
+    *commandPacket = QUERY_N64_PIN;
+    ++commandPacket;
+    bitsRead++;
+    if (bitsRead == 9) {  // counting up to 9 (number of bits)
         return;
     }
 
     // wait for line to go high again
     // it may already be high, so this should just drop through
     timeout2 = 0x3f;
-    while (!QUERY_N64_PIN) {
-        // Totally safe infinite while loop
-        // Trust us. We're doctors.
-        // Won't send your arduino in an infinite loop if you unplug the controller. 100 True statement.
-    }
-    goto read_loop;
 
+    while (!QUERY_N64_PIN) {
+        timeout2--;
+        if (timeout2 == 0) {
+            // not ready to end loop if we didn't get a high signal
+            return;
+        }
+    }
+
+    goto read_loop;
 }
 
 void handleN64CommandCycle() {
-    unsigned char command[] = { 0x90, 0x00, 0x00, 0x00 }; // A + Start
-    if (oddN64ButtonCycle == 0) {
-        command[0] = 0x00; // None pressed
-    } else {
+    //noInterrupts();
+    unsigned char command[] = { 0x00, 0x00, 0x00, 0x00 }; // A + Start
+    if (wiiController.buttons[0] == 1) {
         command[0] = 0x80; // Start pressed
+    } else {
+        command[0] = 0x00; // None pressed
     }
     receiveN64CommandPacket();
     // send those 3 bytes
-    sendN64ButtonsResponse(command, 4);
+    //sendN64ButtonsResponse(command, 4);
     // end of time sensitive code
-    oddN64ButtonCycle = !oddN64ButtonCycle;
+    PORTD |= B00010000; // red led
 }
 
 N64::N64() {
@@ -188,9 +203,18 @@ N64::~N64() {
 }
 
 void N64::init() {
-    oddN64ButtonCycle = true;
+    Serial.println("in N64 init");
     DATA_PIN = 2;
     pinMode(DATA_PIN, INPUT);
     digitalWrite(DATA_PIN, LOW);
     attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
+    Serial.println("done with N64 init");
+
+    // debugging LED
+    DDRD  |= B00010000;
+    PORTD &= B11101111;
+
+    // canary LED
+    DDRD  |= B00001000;
+    PORTD |= B00001000;
 }

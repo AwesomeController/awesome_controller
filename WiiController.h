@@ -12,4 +12,6 @@ class WiiController {
   //private:
 };
 
+//WiiController wiiController;
+
 #endif
