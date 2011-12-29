@@ -1,6 +1,8 @@
 #ifndef _N64_SYSTEM_H_
 #define _N64_SYSTEM_H_
 
+#include "WiiController.h"
+
 // Dumb toggle so we can actually fake buttons
 // These used to be 0x04 which I think is B00000100, but if something breaks, change these
 #define SET_N64_PIN_HIGH DDRD &= ~B00000100
@@ -19,6 +21,7 @@ class N64 {
     N64();
     ~N64();
     void init();
+    static void commandForWiiController(unsigned char command[], WiiController &controller);
     int DATA_PIN;
 };
 

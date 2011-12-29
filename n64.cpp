@@ -6,7 +6,17 @@
 
 extern WiiController wiiController;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
-unsigned char command[] = { 0x80, 0x00, 0x00, 0x00 };
+unsigned char command[] = { 0x00, 0x00, 0x00, 0x00 };
+
+#define N64_BUTTON_A_MASK       0x80
+#define N64_BUTTON_B_MASK       0x40
+#define N64_BUTTON_Z_MASK       0x20
+#define N64_BUTTON_START_MASK   0x10
+#define N64_BUTTON_UP_MASK      0x08
+#define N64_BUTTON_DOWN_MASK    0x04
+#define N64_BUTTON_LEFT_MASK    0x02
+#define N64_BUTTON_RIGHT_MASK   0x01
+
 
 /**
  * This sends the given byte sequence to the controller.
@@ -196,17 +206,7 @@ void handleN64CommandCycle() {
     }
     // end of time sensitive code
 
-    // TODO: Replace 16 with buttons size
-    // sizeof(buttons)/sizeof(buttons[0])
-
-    command[0] = 0x00;
-    for (int i = 0; i < 8; i++) {
-      command[0] += (wiiController.buttons[i] << (7-i));
-    }
-    command[1] = 0x00;
-    command[2] = 0x00;
-    command[3] = 0x00;
-
+    N64::commandForWiiController(command, wiiController);
     // Toggle interrupt handler to clear additional interrupts
     // that occurred during this ISR.
     EIFR |= (1 << INT0);
@@ -240,4 +240,20 @@ void N64::init() {
 
     EICRA |= (1 << ISC01);    // Trigger INT0 on falling edge
     EIMSK |= (1 << INT0);     // Enable external interrupt INT0
+}
+
+void N64::commandForWiiController(unsigned char command[], WiiController &controller) {
+  command[0] = 0x00;
+  command[1] = 0x00;
+  command[2] = 0x00;
+  command[3] = 0x00;
+
+  if (controller.buttons[WII_BUTTON_A])     command[0] += N64_BUTTON_A_MASK;
+  if (controller.buttons[WII_BUTTON_B])     command[0] += N64_BUTTON_B_MASK;
+  if (controller.buttons[WII_BUTTON_Z])     command[0] += N64_BUTTON_Z_MASK;
+  if (controller.buttons[WII_BUTTON_START]) command[0] += N64_BUTTON_START_MASK;
+  if (controller.buttons[WII_BUTTON_UP])    command[0] += N64_BUTTON_UP_MASK;
+  if (controller.buttons[WII_BUTTON_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
+  if (controller.buttons[WII_BUTTON_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
+  if (controller.buttons[WII_BUTTON_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
 }
