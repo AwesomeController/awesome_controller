@@ -3,6 +3,10 @@
 
 WiiController::WiiController(void) {
     Serial.println("in WiiController constuctor");
+    for (int i = 0; i < 16; i++) {
+        buttons[i] = 0;
+    }
+    Serial.println("done in WiiController constuctor");
 }
 
 WiiController::~WiiController(void) {

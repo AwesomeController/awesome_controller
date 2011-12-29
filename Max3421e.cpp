@@ -8,9 +8,7 @@ static byte vbusState;
 /* Constructor */
 MAX3421E::MAX3421E()
 {
-    //Serial.begin( 9600 );
     init();
-    //powerOn();
 }
 byte MAX3421E::getVbusState( void )
 { 
@@ -188,7 +186,7 @@ void MAX3421E::powerOn()
     /* Configure full-duplex SPI, interrupt pulse   */
     regWr( rPINCTL,( bmFDUPSPI + bmINTLEVEL + bmGPXB ));    //Full-duplex SPI, level interrupt, GPX
     if( reset() == false ) {                                //stop/start the oscillator
-        Serial.println("Error: OSCOKIRQ failed to assert");
+        //Serial.println("Error: OSCOKIRQ failed to assert");
     }
 //    /* configure power switch   */
 //    vbusPwr( OFF );                                         //turn Vbus power off
@@ -203,7 +201,7 @@ void MAX3421E::powerOn()
     busprobe();                                                             //check if anything is connected
     regWr( rHIRQ, bmCONDETIRQ );                                            //clear connection detect interrupt                 
     regWr( rCPUCTL, 0x01 );                                                 //enable interrupt pin
-    Serial.println("End powerOn");
+    //Serial.println("End powerOn");
 }
 /* MAX3421 state change task and interrupt handler */
 byte MAX3421E::Task( void )

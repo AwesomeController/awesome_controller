@@ -2,11 +2,12 @@
 #include "ps3_usb.h"
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
+#include "n64.h"
 
 #define CONSOLE_NES  1
 #define CONSOLE_SNES 2
 #define CONSOLE_N64  3
-#define CONSOLE_CHOICE CONSOLE_NES
+#define CONSOLE_CHOICE CONSOLE_N64
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
@@ -18,22 +19,33 @@ int buttonStatePrintCounter = 0;
 PS3_USB PS3Game;
 BluetoothUsbHostHandler bluetoothUsbHostHandler;
 WiiController wiiController;
+N64 n64system;
 
-void setup() {
-  attachInterrupt(0, resetButtons, RISING);
-  attachInterrupt(1, snesKeyDown, RISING);
+void setup()
+{
+    Serial.begin(9600);
+    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
+        attachInterrupt(0, resetButtons, RISING);
+        attachInterrupt(1, snesKeyDown, RISING);
 
-  pinMode(CLOCK_PIN, INPUT);
-  pinMode(LATCH_PIN, INPUT);
-  pinMode(DATA_PIN, OUTPUT);
+        // Setup clock latch and data pins for SNES/NES
+        pinMode(CLOCK_PIN, INPUT);
+        pinMode(LATCH_PIN, INPUT);
+        pinMode(DATA_PIN, OUTPUT);
 
-  digitalWrite(CLOCK_PIN, HIGH);
+        //Initialize clock pin to 5 volts
+        digitalWrite(CLOCK_PIN, HIGH);
+        SPI.begin();
 
-  SPI.begin();
-  Serial.begin(9600);
+        initPS3Controller();
+        initBluetoothUsbHostHandler();
+    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+        SPI.begin();
+        initPS3Controller();
+        initBluetoothUsbHostHandler();
 
-  initPS3Controller();
-  initBluetoothUsbHostHandler();
+        n64system.init();
+    }
 }
 
 void initPS3Controller() {
@@ -46,42 +58,59 @@ void initBluetoothUsbHostHandler() {
 }
 
 void loop() {
-  // eventually: for each controller, read their state and store.
-  // right now only works for the one controller that is plugged in
-  readControllerState();
+    //Serial.println("at top of loop");
+    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
+        // eventually: for each controller, read their state and store.
+        // right now only works for the one controller that is plugged in
+        readControllerState();
 
-  // eventually: for each wiimote, read their state and store.
-  // right now only works for the one controller that is plugged in
-  bluetoothUsbHostHandler.task(&readButtons);
+        // eventually: for each wiimote, read their state and store.
+        // right now only works for the one controller that is plugged in
+        bluetoothUsbHostHandler.task(&readButtons);
 
-  buttonStatePrintCounter++;
-  if (buttonStatePrintCounter > 250) {
-    wiiController.printButtonStates();
-    buttonStatePrintCounter = 0;
-  }
+        buttonStatePrintCounter++;
+        if (buttonStatePrintCounter > 250) {
+            wiiController.printButtonStates();
+            buttonStatePrintCounter = 0;
+        }
+    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+        // eventually: for each controller, read their state and store.
+        // right now only works for the one controller that is plugged in
+        //readControllerState();
+
+        // eventually: for each wiimote, read their state and store.
+        // right now only works for the one controller that is plugged in
+        bluetoothUsbHostHandler.task(&readButtons);
+
+        buttonStatePrintCounter++;
+        if (buttonStatePrintCounter > 250) {
+            //wiiController.printButtonStates();
+            buttonStatePrintCounter = 0;
+        }
+    }
 }
 
 void readButtons(void) {
-  wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
-  wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
-  wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_MINUS);
-  wiiController.buttons[3] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_PLUS);
-  wiiController.buttons[4] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_RIGHT);
-  wiiController.buttons[5] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_LEFT);
-  wiiController.buttons[6] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_UP);
-  wiiController.buttons[7] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_DOWN);
-  if (wiiController.buttons[0] ||
-      wiiController.buttons[1] ||
-      wiiController.buttons[2] ||
-      wiiController.buttons[3] ||
-      wiiController.buttons[4] ||
-      wiiController.buttons[5] ||
-      wiiController.buttons[6] ||
-      wiiController.buttons[7]) {
-      PORTD |=  B00010000; // red led
-  } else {
-      PORTD &= ~B00010000; // red led
-  }
+    wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
+    wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
+    wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_B);
+    wiiController.buttons[3] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_PLUS);
+    wiiController.buttons[4] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_RIGHT);
+    wiiController.buttons[5] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_LEFT);
+    wiiController.buttons[6] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_UP);
+    wiiController.buttons[7] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_DOWN);
+    if (wiiController.buttons[0] ||
+        wiiController.buttons[1] ||
+        wiiController.buttons[2] ||
+        wiiController.buttons[3] ||
+        wiiController.buttons[4] ||
+        wiiController.buttons[5] ||
+        wiiController.buttons[6] ||
+        wiiController.buttons[7]) {
+        RED_LED_ON;
+    } else {
+        RED_LED_OFF;
+    }
 }
 
 void readControllerState() {
@@ -109,15 +138,15 @@ void readControllerState() {
 }
 
 void snesKeyDown() {
-  if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-    PORTD |= B00010000; // turns signal to high
-  } else {
-    PORTD &= B11101111; // turns signal to low
-  }
-  buttonCyclesSinceLatch++;
+    if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
+        RED_LED_ON;
+    } else {
+        RED_LED_OFF;
+    }
+    buttonCyclesSinceLatch++;
 }
 
 void resetButtons() {
-  buttonCyclesSinceLatch = 0;
-  snesKeyDown();
+    buttonCyclesSinceLatch = 0;
+    snesKeyDown();
 }
