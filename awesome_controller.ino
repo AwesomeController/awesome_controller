@@ -111,9 +111,9 @@ void readButtons(void) {
         wiiController.buttons[5] ||
         wiiController.buttons[6] ||
         wiiController.buttons[7]) {
-        PORTD |=  B00010000; // red led
+        RED_LED_ON;
     } else {
-        PORTD &= ~B00010000; // red led
+        RED_LED_OFF;
     }
 }
 
@@ -163,9 +163,9 @@ void readControllerState() {
 
 void snesKeyDown() {
     if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-        PORTD |= B00010000; // turns signal to high
+        RED_LED_ON;
     } else {
-        PORTD &= B11101111; // turns signal to low
+        RED_LED_OFF;
     }
     buttonCyclesSinceLatch++;
 }

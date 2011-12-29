@@ -1,13 +1,12 @@
 #include <SPI.h>
 #include <Arduino.h>
+#include <avr/interrupt.h>
 #include "n64.h"
 #include "WiiController.h"
 
 extern WiiController wiiController;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
-volatile bool oddButton = false;
-volatile unsigned char command[] = { 0x80, 0x00, 0x00, 0x00 };
-volatile int counter = 0;
+unsigned char command[] = { 0x80, 0x00, 0x00, 0x00 };
 
 /**
  * This sends the given byte sequence to the controller.
@@ -133,22 +132,23 @@ bool receiveN64CommandPacket() {
 //I AM HERE
     unsigned char timeout1;
     unsigned char timeout2;
-    char bitsToRead = 9;
+    char bitsToRead = 8;
     unsigned char *commandPacket = N64RawCommandPacket;
 
     // Again, using gotos here to make the assembly more predictable and
     // optimization easier (please don't kill me)
 read_loop:
-    timeout1 = 0xff;
-
     // wait for line to go low
     // otherwise, wait a little and then return
+    // We can't just return immediately or we'll catch another interrupt
+    // at a random time. We need to wait for the entire command packet.
+    timeout1 = 0x30;
+
     while (QUERY_N64_PIN) {
-        //timeout1--;
-//        if (!--timeout1) {
-//            // not ready to start loop if we didn't get a low signal
-//            return false;
-//        }
+      if (!--timeout1) {
+        // not ready to start loop if we didn't get a low signal
+        return false;
+      }
     }
 
     // wait approx 2us and poll the line
@@ -173,47 +173,51 @@ read_loop:
 
     // wait for line to go high again
     // it may already be high, so this should just drop through
+    // We can't just return immediately or we'll catch another interrupt
+    // at a random time. We need to wait for the entire command packet.
     timeout2 = 0x3f;
 
     while (!QUERY_N64_PIN) {
-//        timeout2--;
-//        if (!--timeout2) {
-//            // not ready to end loop if we didn't get a high signal
-//            return false;
-//        }
+        if (!--timeout2) {
+            // not ready to end loop if we didn't get a high signal
+            return false;
+        }
     }
 
     goto read_loop;
 }
 
 void handleN64CommandCycle() {
-    oddButton = !oddButton;
-    if (oddButton) {
-        return;
-    }
-    //if (wiiController.buttons[0] == 1) {
-    //    command[0] = 0x80; // Start pressed
-    //} else {
-    //    command[0] = 0x00; // None pressed
-    //}
-
+    WHITE_LED_ON;
     // begin time sensitive code
+
     if (receiveN64CommandPacket()) {
         sendN64ButtonsResponse(command, 4);
     }
     // end of time sensitive code
 
-    if (wiiController.buttons[3]) {
-        command[0] = 0x80;
-        PORTD |= B00001000; // canary led
-    } else {
-        command[0] = 0x00;
-        PORTD &= B11110111; // canary led
+    // TODO: Replace 16 with buttons size
+    // sizeof(buttons)/sizeof(buttons[0])
+
+    command[0] = 0x00;
+    for (int i = 0; i < 8; i++) {
+      command[0] += (wiiController.buttons[i] << (7-i));
     }
     command[1] = 0x00;
     command[2] = 0x00;
     command[3] = 0x00;
+
+    // Toggle interrupt handler to clear additional interrupts
+    // that occurred during this ISR.
+    EIFR |= (1 << INT0);
+
+    WHITE_LED_OFF;
 }
+
+ISR(INT0_vect) {
+  handleN64CommandCycle();
+}
+
 
 N64::N64() {
 }
@@ -228,11 +232,12 @@ void N64::init() {
 
     // debugging LED
     DDRD  |= B00010000;
-    PORTD &= B11101111;
+    RED_LED_OFF;
 
     // canary LED
     DDRD  |= B00001000;
-    //PORTD |= B00001000;
+    WHITE_LED_OFF;
 
-    attachInterrupt(0, handleN64CommandCycle, FALLING); // Interrupt on Pin 2
+    EICRA |= (1 << ISC01);    // Trigger INT0 on falling edge
+    EIMSK |= (1 << INT0);     // Enable external interrupt INT0
 }

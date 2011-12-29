@@ -7,6 +7,13 @@
 #define SET_N64_PIN_LOW  DDRD |=  B00000100
 #define QUERY_N64_PIN    (PIND &  B00000100)
 
+#define WHITE_LED_ON   PORTD |= B00001000
+#define WHITE_LED_OFF  PORTD &= B11110111
+
+#define RED_LED_ON     PORTD |= B00010000
+#define RED_LED_OFF    PORTD &= B11101111
+
+
 class N64 {
   public:
     N64();
