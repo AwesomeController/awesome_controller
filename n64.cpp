@@ -248,12 +248,12 @@ void N64::commandForWiiController(unsigned char command[], WiiController &contro
   command[2] = 0x00;
   command[3] = 0x00;
 
-  if (controller.buttons[WII_BUTTON_A])     command[0] += N64_BUTTON_A_MASK;
-  if (controller.buttons[WII_BUTTON_B])     command[0] += N64_BUTTON_B_MASK;
-  if (controller.buttons[WII_BUTTON_Z])     command[0] += N64_BUTTON_Z_MASK;
-  if (controller.buttons[WII_BUTTON_START]) command[0] += N64_BUTTON_START_MASK;
-  if (controller.buttons[WII_BUTTON_UP])    command[0] += N64_BUTTON_UP_MASK;
-  if (controller.buttons[WII_BUTTON_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
-  if (controller.buttons[WII_BUTTON_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
-  if (controller.buttons[WII_BUTTON_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
+  if (controller.buttons[WII_REMOTE_2])     command[0] += N64_BUTTON_A_MASK;
+  if (controller.buttons[WII_REMOTE_1])     command[0] += N64_BUTTON_B_MASK;
+  if (controller.buttons[WII_REMOTE_B])     command[0] += N64_BUTTON_Z_MASK;
+  if (controller.buttons[WII_REMOTE_PLUS])  command[0] += N64_BUTTON_START_MASK;
+  if (controller.buttons[WII_REMOTE_UP])    command[0] += N64_BUTTON_UP_MASK;
+  if (controller.buttons[WII_REMOTE_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
+  if (controller.buttons[WII_REMOTE_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
+  if (controller.buttons[WII_REMOTE_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
 }
