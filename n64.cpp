@@ -214,11 +214,6 @@ void handleN64CommandCycle() {
     WHITE_LED_OFF;
 }
 
-ISR(INT0_vect) {
-  handleN64CommandCycle();
-}
-
-
 N64::N64() {
 }
 
@@ -238,8 +233,7 @@ void N64::init() {
     DDRD  |= B00001000;
     WHITE_LED_OFF;
 
-    EICRA |= (1 << ISC01);    // Trigger INT0 on falling edge
-    EIMSK |= (1 << INT0);     // Enable external interrupt INT0
+    attachInterrupt(0, handleN64CommandCycle, FALLING);
 }
 
 void N64::commandForWiiController(unsigned char command[], WiiController &controller) {
