@@ -80,9 +80,10 @@ BluetoothUsbHostHandler::BluetoothUsbHostHandler(void) {
 BluetoothUsbHostHandler::~BluetoothUsbHostHandler(void) {
 }
 
-void BluetoothUsbHostHandler::init(void) {
+void BluetoothUsbHostHandler::init(WiiController &controller) {
     Max.powerOn();
     delay(200);
+    wiiController_ = &controller;
 }
 
 void BluetoothUsbHostHandler::task(void (*pFunc)(void)) {

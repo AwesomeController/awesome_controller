@@ -53,7 +53,7 @@ void initPS3Controller() {
 }
 
 void initBluetoothUsbHostHandler() {
-  bluetoothUsbHostHandler.init();
+  bluetoothUsbHostHandler.init(wiiController);
   bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
