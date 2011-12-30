@@ -10,7 +10,7 @@ class NES {
     NES();
     ~NES();
     void init();
-    int LATCH_PIN;
+    int CLATCH_PIN;
     int CLOCK_PIN;
     int DATA_PIN;
 };

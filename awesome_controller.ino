@@ -53,6 +53,8 @@ void loop() {
 
         buttonStatePrintCounter++;
         if (buttonStatePrintCounter > 250) {
+            PORTD &= B11011111; // red led off
+            PORTD &= B10111111; // white/blue led off
             wiiController.printButtonStates();
             buttonStatePrintCounter = 0;
         }
