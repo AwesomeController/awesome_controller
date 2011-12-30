@@ -174,16 +174,7 @@ void handleLatchCycle() {
             if (buttonCyclesSinceLatch == 8) {
                 // On our last cycle, we have already sent 8 buttons, so we
                 // should reset state and prepare to leave the ISR.
-                PORTD |= B00010000; // turns signal to high
-                PORTD |= B00100000; // red led on
-                asm volatile("nop\nnop\nnop\nnop\nnop\n");
-                PORTD &= B11011111; // red led off
-
-                // Toggle interrupt handler to clear additional interrupts
-                // that occurred during this ISR.
-                EIFR |= (1 << INTF1);
-                EIFR |= (1 << INTF0);
-                return;
+                break;
             } else if (wiiController.buttons[buttonCyclesSinceLatch]) {
                 PORTD &= B11101111; // turns signal to low
             } else {
@@ -197,16 +188,18 @@ void handleLatchCycle() {
         }
 
         if (loopsSinceClock > 30) {
-            // We timed out because there were no clock cycles recently.
-            // Toggle interrupt handler to clear additional interrupts
-            // that occurred during this ISR.
-            PORTD |= B00010000; // turns signal to high
-            PORTD |= B00100000; // red led on
-            asm volatile("nop\nnop\nnop\nnop\nnop\n");
-            PORTD &= B11011111; // red led off
-            EIFR |= (1 << INTF1);
-            EIFR |= (1 << INTF0);
-            return;
+            // We timed out because there were no clock cycles recently,
+            // so we should reset state and prepare to leave the ISR.
+            break;
         }
     }
+
+    // Toggle interrupt handler to clear additional interrupts
+    // that occurred during this ISR.
+    PORTD |= B00010000; // turns signal to high
+    PORTD |= B00100000; // red led on
+    asm volatile("nop\nnop\nnop\nnop\nnop\n");
+    PORTD &= B11011111; // red led off
+    EIFR |= (1 << INTF1);
+    EIFR |= (1 << INTF0);
 }
