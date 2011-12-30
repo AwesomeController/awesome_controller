@@ -69,6 +69,10 @@ BluetoothUsbHostHandler::BluetoothUsbHostHandler(void) {
     old_hid_buttons_ = 0;
     hid_buttons_click_ = 0;
 
+    hid_ext_just_connected_ = false;
+    waiting_for_cal_data_ = false;
+    waiting_for_ext_id_ = false;
+
     bdaddr_acquisition_mode_ = BD_ADDR_INQUIRY;
     wiiremote_status_ = 0;
 }
@@ -627,6 +631,19 @@ void BluetoothUsbHostHandler::L2CAP_task(void) {
         if (hid_status_reported) {
             setReportMode(INPUT_REPORT_IR_EXT_ACCEL);
         }
+        if (hid_ext_just_connected_) {
+            // Initialize the extension
+            // write 0x55 to the control registers at memory location 0x(4)A400F0
+            uint8_t temp_buf[1] = { 0x55 };
+            writeData(false, 0xA400F0, (uint8_t *) temp_buf, 1);
+            // write 0x00 to 0x(4)A400FB
+            temp_buf[0] = 0x00;
+            writeData(false, 0xA400FB, (uint8_t *) temp_buf, 1);
+            // read the bytes at 0xa400fa to see what extension we have just initialized
+            readData(false, 0xa400fa, 6);
+            waiting_for_ext_id_ = true;
+            hid_ext_just_connected_ = false;
+        }
         if (l2cap_interrupt_disconnected || l2cap_command_disconnected) {
             l2cap_state_ = L2CAP_DISCONNECT_STATE;
             wiiremote_status_ &= ~WIIREMOTE_STATE_RUNNING;
@@ -823,7 +840,17 @@ void BluetoothUsbHostHandler::readReport(uint8_t *data) {
         switch (data[9]) {
 
           case INPUT_REPORT_STATUS:
+            /* (a1) 20 BB BB LF 00 00 VV    */
             hid_flags_ |= HID_FLAG_STATUS_REPORTED;
+            // the LF byte is a bitmask of flags, 0x02 indicating whether an extension is connected
+            if (data[12] & 0x02) {
+                Serial.println("extension connected");
+                hid_flags_ |= HID_FLAG_EXTENSION;
+                hid_ext_just_connected_ = true;
+            } else {
+                Serial.println("extension disconnected");
+                hid_flags_ &= ~HID_FLAG_EXTENSION;
+            }
             break;
 
           case INPUT_REPORT_READ_DATA:
@@ -832,12 +859,38 @@ void BluetoothUsbHostHandler::readReport(uint8_t *data) {
             /*  E (low nybble of SE) is the error flag. Error value 0 for no error.     */
             /*  S (high nybble of SE) is the size in bytes, minus one.                  */
             /*  FF FF is the offset expressed in abs. memory address of 1st byte.       */
-            if ((data[12] & 0x0f) == 0) {
-                if ((data[13] == 0x00) && (data[14] == 0x16)) {
-                    hid_flags_ |= HID_FLAG_READ_CALIBRATION;
-                    parseCalData(data);
+            if ((data[12] & 0x0f) == 0) { // no errors
+                if (waiting_for_cal_data_) {
+                    if ((data[13] == 0x00) && (data[14] == 0x16)) {
+                        hid_flags_ |= HID_FLAG_READ_CALIBRATION;
+                        parseCalData(data);
+                    }
+                    waiting_for_cal_data_ = false;
                 }
+                if (waiting_for_ext_id_) {
+                    // These if blocks are kind of redundant. the first checks a state variable and the second
+                    // checks the data address that we asked to read.
+                    if (data[13] == 0x00 && data[14] == 0xfa) {
+                        // the six bytes that identify the extension should be:
+                        // classic controller: 0000 A420 0101
+                        Serial.println(data[15], HEX);
+                        Serial.println(data[16], HEX);
+                        Serial.println(data[17], HEX);
+                        Serial.println(data[18], HEX);
+                        Serial.println(data[19], HEX);
+                        Serial.println(data[20], HEX);
+                    }
+                    waiting_for_ext_id_ = false;
+                }
+            } else if ((data[12] & 0x0f) == 7) {
+                Serial.println("Read error: attempting to read from a write-only register");
+            } else if ((data[12] & 0x0f) == 8) {
+                Serial.println("Read error: attempting to read from nonexistant memory");
             }
+            break;
+
+          case INPUT_REPORT_ACK:
+            Serial.println("write data acknowledged");
             break;
 
           case INPUT_REPORT_IR_EXT_ACCEL:
@@ -850,6 +903,8 @@ void BluetoothUsbHostHandler::readReport(uint8_t *data) {
                 hid_flags_ &= ~HID_FLAG_BUTTONS_CHANGED;
             }
             hid_buttons_click_ = ~hid_buttons_ & old_hid_buttons_;
+
+            parseClassicController(data);
 
             parseAccel(data);
             //parseButtons(data);   /* buttonPressed() can be used */
@@ -944,6 +999,12 @@ void BluetoothUsbHostHandler::parseAccel(uint8_t *data) {
 #endif
 } // parseAccel
 
+void BluetoothUsbHostHandler::parseClassicController(uint8_t *data) {
+    if (!(data[30] & 0x10)) {
+        Serial.println("classic button!");
+    }
+} // parseClassicController
+
 void BluetoothUsbHostHandler::parseButtons(uint8_t *data) {
     uint16_t buttons = (data[10] & 0x9f) | (data[11] & 0x9f) << 8;
     Report.Button.Left  = ((buttons & WIIREMOTE_LEFT) != 0);
@@ -983,26 +1044,62 @@ uint8_t BluetoothUsbHostHandler::setReportMode(uint8_t mode) {
     return writeReport((uint8_t *) hid_buf, 3);
 }
 
-uint8_t BluetoothUsbHostHandler::readData(uint32_t offset, uint16_t size) {
+uint8_t BluetoothUsbHostHandler::readData(bool eeprom, uint32_t offset, uint16_t size) {
     uint8_t hid_buf[7];
     hid_buf[0] = OUTPUT_REPORT_READ_DATA;
-    hid_buf[1] = (uint8_t) ((offset & 0xff000000) >> 24);   /* TODO involve Rumble flag */
+    hid_buf[1] = eeprom ? 0x00 : 0x04; // 00 == EEPROM, 04 == control registers. TODO involve rumble flag
     hid_buf[2] = (uint8_t) ((offset & 0x00ff0000) >> 16);
     hid_buf[3] = (uint8_t) ((offset & 0x0000ff00) >> 8);
     hid_buf[4] = (uint8_t) ((offset & 0x000000ff));
     hid_buf[5] = (uint8_t) ((size & 0xff00) >> 8);
     hid_buf[6] = (uint8_t) ((size & 0x00ff));
 
+    Serial.println("reading...");
+    for (int i = 0; i < 7; i++) {
+        Serial.print(hid_buf[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println("");
+
     //hid_flags_ &= ~HID_FLAG_COMMAND_SUCCESS;
     hid_flags_ &= ~HID_FLAG_READ_CALIBRATION;
     return writeReport((uint8_t *) hid_buf, 7);
+}
+
+uint8_t BluetoothUsbHostHandler::writeData(bool eeprom, uint32_t offset, uint8_t *data, uint8_t size) {
+    uint8_t hid_buf[22];
+    hid_buf[0] = OUTPUT_REPORT_WRITE_DATA;
+    hid_buf[1] = eeprom ? 0x00 : 0x04; // 00 == EEPROM, 04 == control registers. TODO involve rumble flag
+    hid_buf[2] = (uint8_t) ((offset & 0x00ff0000) >> 16);
+    hid_buf[3] = (uint8_t) ((offset & 0x0000ff00) >> 8);
+    hid_buf[4] = (uint8_t) ((offset & 0x000000ff));
+    hid_buf[5] = size;
+    // write 16 bytes, padding with zeroes if size is less than 16
+    for (uint8_t i = 0; i < 16; i++) {
+        if (i < size) {
+            hid_buf[6+i] = *data;
+            data++;
+        } else {
+            hid_buf[6+i] = 0x00;
+        }
+    }
+
+    Serial.println("writing...");
+    for (int i = 0; i < 22; i++) {
+        Serial.print(hid_buf[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println("");
+
+    return writeReport((uint8_t *) hid_buf, 22);
 }
 
 /************************************************************/
 /* WiiRemote Command                                        */
 /************************************************************/
 uint8_t BluetoothUsbHostHandler::readWiiRemoteCalibration(void) {
-    return readData(0x0016, 8);
+    return readData(true, 0x0016, 8);
+    waiting_for_cal_data_ = true;
 }
 
 bool BluetoothUsbHostHandler::buttonPressed(uint16_t button) {
@@ -1016,7 +1113,6 @@ bool BluetoothUsbHostHandler::buttonClicked(uint16_t button) {
     hid_buttons_click_ &= ~button;  // clear "click" event
     return click;
 }
-
 
 /************************************************************/
 /* etc                                                      */

@@ -339,7 +339,8 @@ class BluetoothUsbHostHandler {
     void getBDAddress(uint8_t *, int);
     uint8_t setLED(uint8_t/*eWiiRemoteLED*/);
     uint8_t setReportMode(uint8_t);         // TODO declare as private
-    uint8_t readData(uint32_t, uint16_t);   // TODO declare as private
+    uint8_t readData(bool, uint32_t, uint16_t);   // TODO declare as private
+    uint8_t writeData(bool, uint32_t, uint8_t *, uint8_t);
     uint8_t readWiiRemoteCalibration(void);
 
     bool buttonPressed(uint16_t/*eWiiRemoteButtons*/);
@@ -370,6 +371,7 @@ class BluetoothUsbHostHandler {
     uint8_t writeReport(uint8_t *, uint8_t);
     void parseCalData(uint8_t *);
     void parseAccel(uint8_t *);
+    void parseClassicController(uint8_t *);
     void parseButtons(uint8_t *);
 
     Point3f_t averagePoint3(Point3i_t *, uint8_t);
@@ -402,6 +404,10 @@ class BluetoothUsbHostHandler {
     uint16_t hid_buttons_;
     uint16_t old_hid_buttons_;
     uint16_t hid_buttons_click_;
+
+    bool hid_ext_just_connected_;
+    bool waiting_for_cal_data_;
+    bool waiting_for_ext_id_;
 
     /* */
     Point3i_t Accel_Raw_[ACCEL_AVERAGE_SIZE];
