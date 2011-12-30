@@ -38,6 +38,7 @@ void setup()
 
         //Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
+        digitalWrite(DATA_PIN, LOW);
 
         SPI.begin();
 
@@ -196,7 +197,7 @@ void handleLatchCycle() {
 
     // Toggle interrupt handler to clear additional interrupts
     // that occurred during this ISR.
-    PORTD |= B00010000; // turns signal to high
+    PORTD &= B11101111; // turns signal low
     PORTD |= B00100000; // red led on
     asm volatile("nop\nnop\nnop\nnop\nnop\n");
     PORTD &= B11011111; // red led off
