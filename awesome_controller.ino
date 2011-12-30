@@ -9,11 +9,12 @@
 #define CONSOLE_N64  3
 #define CONSOLE_CHOICE CONSOLE_NES
 
+#define NOOP_FOR_2_US asm volatile("nop\nnop\nnop\nnop\nnop\n" "nop\nnop\nnop\nnop\nnop\n" "nop\nnop\nnop\nnop\nnop\n" "nop\nnop\nnop\nnop\nnop\n" "nop\nnop\nnop\nnop\nnop\n" "nop\nnop\nnop\nnop\nnop\n")
+
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
 
-volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
 
 PS3_USB PS3Game;
@@ -25,8 +26,8 @@ void setup()
 {
     Serial.begin(9600);
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
-        attachInterrupt(0, resetButtons, RISING);
-        attachInterrupt(1, snesKeyDown, RISING);
+        attachInterrupt(0, caughtLatch, RISING);
+        attachInterrupt(1, caughtClock1, FALLING);
 
         // Setup clock latch and data pins for SNES/NES
         pinMode(CLOCK_PIN, INPUT);
@@ -35,6 +36,7 @@ void setup()
 
         //Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
+
         SPI.begin();
 
         initPS3Controller();
@@ -137,16 +139,64 @@ void readControllerState() {
     }
 }
 
-void snesKeyDown() {
-    if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-        RED_LED_ON;
+void caughtClock1() { /* noop */ }
+
+void caughtLatch() {
+    if (wiiController.buttons[0] == 0) {
+        PORTD |= B00010000; // turns signal to high
     } else {
-        RED_LED_OFF;
+        PORTD &= B11101111; // turns signal to low
     }
-    buttonCyclesSinceLatch++;
+    noninfinite_loop();
 }
 
-void resetButtons() {
-    buttonCyclesSinceLatch = 0;
-    snesKeyDown();
+void noninfinite_loop() {
+    int loops_since_clock = 0;
+    int buttonCyclesSinceLatch = 1;
+
+    while (buttonCyclesSinceLatch < 8) {
+        if (EIFR & 0x02) { // clock 1 interrupt is high
+            // Toggle interrupt handler to clear additional interrupts
+            // that occurred during this ISR.
+            EIFR |= (1 << INT1);
+            // wait approx 2us to clear
+            NOOP_FOR_2_US;
+            if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
+                PORTD |= B00010000; // turns signal to high
+            } else {
+                PORTD &= B11101111; // turns signal to low
+            }
+            buttonCyclesSinceLatch++;
+            loops_since_clock = 0;
+        } else {
+            loops_since_clock++;
+        }
+
+        if (loops_since_clock > 300) {
+            // we timed out...
+            // Toggle interrupt handler to clear additional interrupts
+            // that occurred during this ISR.
+            EIFR |= (1 << INT1);
+            return;
+        }
+    }
+
+    // wait approx 4us to clear
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+    NOOP_FOR_2_US;
+
+    PORTD |= B00010000; // turns signal to high
+    // Toggle interrupt handler to clear additional interrupts
+    // that occurred during this ISR.
+    EIFR |= (1 << INT1);
 }
