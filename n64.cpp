@@ -250,4 +250,5 @@ void N64::commandForWiiController(unsigned char command[], WiiController &contro
   if (controller.buttons[WII_REMOTE_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
   if (controller.buttons[WII_REMOTE_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
   if (controller.buttons[WII_REMOTE_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
+  command[2] += controller.classicButtons.leftStickX * 4 - 128;
 }

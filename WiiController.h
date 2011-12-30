@@ -12,11 +12,15 @@
 
 class WiiController {
   public:
+    typedef struct ClassicButtons {
+      int32_t leftStickX;
+    } ClassicButtons_t;
+
     WiiController(void);
     ~WiiController(void);
     void printButtonStates(void);
     boolean buttons[16];
-
+    ClassicButtons_t classicButtons;
 
   //private:
 };

@@ -1001,6 +1001,7 @@ void BluetoothUsbHostHandler::parseAccel(uint8_t *data) {
 } // parseAccel
 
 void BluetoothUsbHostHandler::parseClassicController(uint8_t *data) {
+    wiiController_->classicButtons.leftStickX = (data[25] & 0x3f);
     if (!(data[30] & 0x10)) {
         Serial.println("classic button!");
     }
