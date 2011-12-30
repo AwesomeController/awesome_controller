@@ -26,13 +26,15 @@ void setup()
 {
     Serial.begin(9600);
     if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
-        attachInterrupt(0, caughtLatch, RISING);
+        attachInterrupt(0, handleLatchCycle, RISING);
         attachInterrupt(1, caughtClock1, FALLING);
 
         // Setup clock latch and data pins for SNES/NES
         pinMode(CLOCK_PIN, INPUT);
         pinMode(LATCH_PIN, INPUT);
         pinMode(DATA_PIN, OUTPUT);
+        pinMode(5, OUTPUT);
+        pinMode(6, OUTPUT);
 
         //Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
@@ -141,62 +143,70 @@ void readControllerState() {
 
 void caughtClock1() { /* noop */ }
 
-void caughtLatch() {
-    if (wiiController.buttons[0] == 0) {
-        PORTD |= B00010000; // turns signal to high
-    } else {
+// Handle full cycle from one latch until all 8 buttons have been sent
+// or we have gone more than 12 nanoseconds without seeing another
+// clock or latch.
+void handleLatchCycle() {
+    // Immediately send the first button on a clock signal.
+    if (wiiController.buttons[0]) {
         PORTD &= B11101111; // turns signal to low
+    } else {
+        PORTD |= B00010000; // turns signal to high
     }
-    noninfinite_loop();
-}
+    PORTD |= B00100000; // red led on
+    asm volatile("nop\nnop\nnop\nnop\nnop\n");
+    PORTD &= B11011111; // red led off
 
-void noninfinite_loop() {
-    int loops_since_clock = 0;
+
+    int loopsSinceClock = 0;
     int buttonCyclesSinceLatch = 1;
 
-    while (buttonCyclesSinceLatch < 8) {
+    // We want to see 8 clock cycles total, and we have already sent
+    // our first button. So we poll until we see the interrupt register bit set
+    // and this indicates that a clock cycle has occurred (we should send the
+    // next button in anticipation.)
+    while (buttonCyclesSinceLatch < 9) {
         if (EIFR & 0x02) { // clock 1 interrupt is high
             // Toggle interrupt handler to clear additional interrupts
             // that occurred during this ISR.
-            EIFR |= (1 << INT1);
-            // wait approx 2us to clear
-            NOOP_FOR_2_US;
-            if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
+            EIFR |= (1 << INTF1);
+
+            if (buttonCyclesSinceLatch == 8) {
+                // On our last cycle, we have already sent 8 buttons, so we
+                // should reset state and prepare to leave the ISR.
                 PORTD |= B00010000; // turns signal to high
-            } else {
+                PORTD |= B00100000; // red led on
+                asm volatile("nop\nnop\nnop\nnop\nnop\n");
+                PORTD &= B11011111; // red led off
+
+                // Toggle interrupt handler to clear additional interrupts
+                // that occurred during this ISR.
+                EIFR |= (1 << INTF1);
+                EIFR |= (1 << INTF0);
+                return;
+            } else if (wiiController.buttons[buttonCyclesSinceLatch]) {
                 PORTD &= B11101111; // turns signal to low
+            } else {
+                PORTD |= B00010000; // turns signal to high
             }
+
             buttonCyclesSinceLatch++;
-            loops_since_clock = 0;
+            loopsSinceClock = 0;
         } else {
-            loops_since_clock++;
+            loopsSinceClock++;
         }
 
-        if (loops_since_clock > 300) {
-            // we timed out...
+        if (loopsSinceClock > 30) {
+            // We timed out because there were no clock cycles recently.
             // Toggle interrupt handler to clear additional interrupts
             // that occurred during this ISR.
-            EIFR |= (1 << INT1);
+            PORTD |= B00010000; // turns signal to high
+            PORTD |= B00100000; // red led on
+            asm volatile("nop\nnop\nnop\nnop\nnop\n");
+            PORTD &= B11011111; // red led off
+            EIFR |= (1 << INTF1);
+            EIFR |= (1 << INTF0);
             return;
         }
     }
-
-    // wait approx 4us to clear
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-    NOOP_FOR_2_US;
-
-    PORTD |= B00010000; // turns signal to high
-    // Toggle interrupt handler to clear additional interrupts
-    // that occurred during this ISR.
-    EIFR |= (1 << INT1);
 }

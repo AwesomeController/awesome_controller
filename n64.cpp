@@ -209,7 +209,7 @@ void handleN64CommandCycle() {
     N64::commandForWiiController(command, wiiController);
     // Toggle interrupt handler to clear additional interrupts
     // that occurred during this ISR.
-    EIFR |= (1 << INT0);
+    EIFR |= (1 << INTF0);
 
     WHITE_LED_OFF;
 }
