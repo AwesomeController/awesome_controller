@@ -11,7 +11,7 @@ class NES {
     ~NES();
     void init();
     int CLATCH_PIN;
-    int CLOCK_PIN;
+    int CLOCK2_PIN;
     int DATA_PIN;
 };
 
