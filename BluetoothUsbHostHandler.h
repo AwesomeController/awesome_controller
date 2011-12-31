@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 #include "Max3421e.h"
 #include "Usb.h"
+#include "WiiController.h"
 
 enum eDescriptor {
     // {{{
@@ -331,7 +332,7 @@ class BluetoothUsbHostHandler {
     BluetoothUsbHostHandler(void);
     ~BluetoothUsbHostHandler(void);
 
-    void init(void);
+    void init(WiiController &);
     void task(void (*)());
     uint8_t getStatus(void);
     void setBDAddress(uint8_t *, int);
@@ -418,6 +419,8 @@ class BluetoothUsbHostHandler {
     uint8_t wiiremote_status_;
 
     uint8_t buf_[MAX_BUFFER_SIZE];
+
+    WiiController *wiiController_;
 };
 
 #endif  // _BLUETOOTH_USB_HOST_HANDLER_H_

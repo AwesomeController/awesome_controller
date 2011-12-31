@@ -80,9 +80,10 @@ BluetoothUsbHostHandler::BluetoothUsbHostHandler(void) {
 BluetoothUsbHostHandler::~BluetoothUsbHostHandler(void) {
 }
 
-void BluetoothUsbHostHandler::init(void) {
+void BluetoothUsbHostHandler::init(WiiController &controller) {
     Max.powerOn();
     delay(200);
+    wiiController_ = &controller;
 }
 
 void BluetoothUsbHostHandler::task(void (*pFunc)(void)) {
@@ -1000,9 +1001,34 @@ void BluetoothUsbHostHandler::parseAccel(uint8_t *data) {
 } // parseAccel
 
 void BluetoothUsbHostHandler::parseClassicController(uint8_t *data) {
-    if (!(data[30] & 0x10)) {
-        Serial.println("classic button!");
-    }
+    wiiController_->classicButtons.Up       = !(data[30] & 0x01);
+    wiiController_->classicButtons.Left     = !(data[30] & 0x02);
+    wiiController_->classicButtons.ZR       = !(data[30] & 0x04);
+    wiiController_->classicButtons.X        = !(data[30] & 0x08);
+
+    wiiController_->classicButtons.A        = !(data[30] & 0x10);
+    wiiController_->classicButtons.Y        = !(data[30] & 0x20);
+    wiiController_->classicButtons.B        = !(data[30] & 0x40);
+    wiiController_->classicButtons.ZL       = !(data[30] & 0x80);
+
+    // empty bit
+    wiiController_->classicButtons.RClick   = !(data[29] & 0x02);
+    wiiController_->classicButtons.Plus     = !(data[29] & 0x04);
+    wiiController_->classicButtons.Home     = !(data[29] & 0x08);
+
+    wiiController_->classicButtons.Minus    = !(data[29] & 0x10);
+    wiiController_->classicButtons.LClick   = !(data[29] & 0x20);
+    wiiController_->classicButtons.Down     = !(data[29] & 0x40);
+    wiiController_->classicButtons.Right    = !(data[29] & 0x80);
+
+    wiiController_->classicButtons.L        = (data[27] & 0x60) >> 3 | (data[28] & 0xE0) >> 5;
+    wiiController_->classicButtons.R        = (data[28] & 0x1F);
+
+    wiiController_->classicButtons.LeftStickX = (data[25] & 0x3f);
+    wiiController_->classicButtons.LeftStickY = (data[26] & 0x3f);
+
+    wiiController_->classicButtons.RightStickX = (data[25] & 0xC0) >> 3 | (data[26] & 0xC0) >> 5 | (data[27] & 0x80) >> 7;
+    wiiController_->classicButtons.RightStickY = (data[27] & 0x1F);
 } // parseClassicController
 
 void BluetoothUsbHostHandler::parseButtons(uint8_t *data) {
