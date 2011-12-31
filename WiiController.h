@@ -13,7 +13,27 @@
 class WiiController {
   public:
     typedef struct ClassicButtons {
-      int32_t leftStickX;
+      bool    A;
+      bool    B;
+      bool    X;
+      bool    Y;
+      bool    Up;
+      bool    Down;
+      bool    Left;
+      bool    Right;
+      bool    Minus;
+      bool    Plus;
+      bool    Home;
+      bool    ZL;
+      bool    ZR;
+      int16_t L;
+      bool    LClick;
+      int16_t R;
+      bool    RClick;
+      int32_t LeftStickX;
+      int32_t LeftStickY;
+      int16_t RightStickX;
+      int16_t RightStickY;
     } ClassicButtons_t;
 
     WiiController(void);
