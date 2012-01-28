@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <wiring.h>
 #include "ps3_usb.h"
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
@@ -20,6 +21,15 @@ PS3_USB PS3Game;
 BluetoothUsbHostHandler bluetoothUsbHostHandler;
 WiiController wiiController;
 N64 n64system;
+
+void setup();
+void loop();
+void initPS3Controller();
+void initBluetoothUsbHostHandler();
+void readButtons(void);
+void readControllerState();
+void resetButtons();
+void snesKeyDown();
 
 void setup()
 {

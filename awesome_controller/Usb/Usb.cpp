@@ -1,5 +1,6 @@
 /* USB functions */
 
+#include "wiring.h"
 #include "Usb.h"
 
 static byte usb_error = 0;
@@ -12,7 +13,7 @@ EP_RECORD dev0ep;         //Endpoint data structure used during enumeration for 
 
 USB::USB () {
     usb_task_state = USB_DETACHED_SUBSTATE_INITIALIZE;  //set up state machine
-    init(); 
+    init();
 }
 /* Initialize data structures */
 void USB::init()
@@ -22,8 +23,8 @@ void USB::init()
         devtable[ i ].epinfo = NULL;       //clear device table
         devtable[ i ].devclass = 0;
     }
-    devtable[ 0 ].epinfo = &dev0ep; //set single ep for uninitialized device  
-    // not necessary dev0ep.MaxPktSize = 8;          //minimum possible                        	
+    devtable[ 0 ].epinfo = &dev0ep; //set single ep for uninitialized device
+    // not necessary dev0ep.MaxPktSize = 8;          //minimum possible
     dev0ep.sndToggle = bmSNDTOG0;   //set DATA0/1 toggles to 0
     dev0ep.rcvToggle = bmRCVTOG0;
 }
@@ -34,7 +35,7 @@ byte USB::getUsbTaskState( void )
 void USB::setUsbTaskState( byte state )
 {
     usb_task_state = state;
-}     
+}
 EP_RECORD* USB::getDevTableEntry( byte addr, byte ep )
 {
   EP_RECORD* ptr;
@@ -57,9 +58,9 @@ void USB::setDevTableEntry( byte addr, EP_RECORD* eprecord_ptr )
 byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValLo, byte wValHi, unsigned int wInd, unsigned int nbytes, char* dataptr )
 {
  boolean direction = false;     //request direction, IN or OUT
- byte rcode;   
+ byte rcode;
  SETUP_PKT setup_pkt;
- 
+
     // debug
 //    Serial.print("addr: ");
 //    Serial.println( addr, HEX );
@@ -78,7 +79,7 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
 //    Serial.print("nbytes: :");
 //    Serial.println(nbytes, HEX );
     //debug
- 
+
 //    if( dataptr == NULL ) {
 //        datastage = 0;
 //    }
@@ -101,16 +102,16 @@ byte USB::ctrlReq( byte addr, byte ep, byte bmReqType, byte bRequest, byte wValL
     //Serial.println("Setup packet");   //DEBUG
     if( rcode ) {                                   //return HRSLT if not zero
         //Serial.print("Setup packet error: ");
-        //Serial.print( rcode, HEX );                                          
+        //Serial.print( rcode, HEX );
         return( rcode );
     }
-    //Serial.println( direction, HEX ); 
+    //Serial.println( direction, HEX );
     if( dataptr != NULL ) {                         //data stage, if present
         rcode = ctrlData( addr, ep, nbytes, dataptr, direction );
     }
     if( rcode ) {   //return error
         //Serial.print("Data packet error: ");
-        //Serial.print( rcode, HEX );                                          
+        //Serial.print( rcode, HEX );
         return( rcode );
     }
     rcode = ctrlStatus( ep, direction );                //status stage
@@ -133,7 +134,7 @@ byte USB::ctrlStatus( byte ep, boolean direction )
 byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, boolean direction )
 {
   byte rcode;
-    
+
     if( direction ) {                      //IN transfer
         devtable[ addr ].epinfo[ ep ].rcvToggle = bmRCVTOG1;
         //Serial.print("CtrlData toggle check: ");
@@ -147,7 +148,7 @@ byte USB::ctrlData( byte addr, byte ep, unsigned int nbytes, char* dataptr, bool
         devtable[ addr ].epinfo[ ep ].sndToggle = bmSNDTOG1;
         rcode = outTransfer( addr, ep, nbytes, dataptr );
         return( rcode );
-    }    
+    }
 }
 /* IN transfer to arbitrary endpoint. Assumes PERADDR is set. Handles multiple packets if necessary. Transfers 'nbytes' bytes. */
 /* Keep sending INs and writes data to memory area pointed by 'data'                                                           */
@@ -158,7 +159,7 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data , byte
  byte rcode;
  byte pktsize;
  int wait_nak;
- byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
+ byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize;
  unsigned int xfrlen = 0;
     wait_nak = (wait) ? USB_NAK_LIMIT : 1;
     regWr( rHCTL, devtable[ addr ].epinfo[ ep ].rcvToggle );    //set toggle value
@@ -167,7 +168,7 @@ byte USB::inTransfer( byte addr, byte ep, unsigned int nbytes, char* data , byte
         if( rcode ) {
             return( rcode );                            //should be 0, indicating ACK. Else return error code.
         }
-        /* check for RCVDAVIRQ and generate error if not present */ 
+        /* check for RCVDAVIRQ and generate error if not present */
         /* the only case when absense of RCVDAVIRQ makes sense is when toggle error occured. Need to add handling for that */
         if(( regRd( rHIRQ ) & bmRCVDAVIRQ ) == 0 ) {
             return ( 0xf0 );                            //receive error
@@ -200,16 +201,16 @@ byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
  char* data_p = data;   //local copy of the data pointer
  unsigned int bytes_tosend, nak_count;
  unsigned int bytes_left = nbytes;
- byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize; 
+ byte maxpktsize = devtable[ addr ].epinfo[ ep ].MaxPktSize;
 
     regWr( rHCTL, devtable[ addr ].epinfo[ ep ].sndToggle );    //set toggle value
-    
+
     while( bytes_left ) {
         retry_count = 0;
         nak_count = 0;
         bytes_tosend = ( bytes_left >= maxpktsize ) ? maxpktsize : bytes_left;
         bytesWr( rSNDFIFO, bytes_tosend, data_p );      //filling output FIFO
-        regWr( rSNDBC, bytes_tosend );                  //set number of bytes    
+        regWr( rSNDBC, bytes_tosend );                  //set number of bytes
         regWr( rHXFR, ( tokOUT | ep ));                 //dispatch packet
         while(!(regRd( rHIRQ ) & bmHXFRDNIRQ ));        //wait for the completion IRQ
         regWr( rHIRQ, bmHXFRDNIRQ );                    //clear IRQ
@@ -247,14 +248,14 @@ byte USB::outTransfer( byte addr, byte ep, unsigned int nbytes, char* data )
 byte USB::dispatchPkt( byte token, byte ep, int wait_nak )
 {
   unsigned long timeout = millis() + USB_XFER_TIMEOUT;;
-  byte tmpdata;   
+  byte tmpdata;
   byte rcode;
   unsigned int nak_count = 0; // Changed RI 15/11/09
   char retry_count = 0;
 
     while( 1 ) {
         regWr( rHXFR, ( token|ep ));            //launch the transfer
-        rcode = 0xff;   
+        rcode = 0xff;
         while( millis() < timeout ) {           //wait for transfer completion
             tmpdata = regRd( rHIRQ );
             if( tmpdata & bmHXFRDNIRQ ) {
@@ -292,9 +293,9 @@ byte USB::dispatchPkt( byte token, byte ep, int wait_nak )
 /* USB main task. Performs enumeration/cleanup */
 void USB::Task( void )      //USB state machine
 {
-  byte i;   
+  byte i;
   byte rcode;
-  static byte tmpaddr; 
+  static byte tmpaddr;
   byte tmpdata;
   static unsigned long delay = 0;
   USB_DEVICE_DESCRIPTOR buf;
@@ -329,7 +330,7 @@ void USB::Task( void )      //USB state machine
             break;
         case USB_DETACHED_SUBSTATE_ILLEGAL:             //just sit here
             break;
-        case USB_ATTACHED_SUBSTATE_SETTLE:              //setlle time for just attached device                  
+        case USB_ATTACHED_SUBSTATE_SETTLE:              //setlle time for just attached device
             if( delay < millis() ) {
                 usb_task_state = USB_ATTACHED_SUBSTATE_RESET_DEVICE;
             }
@@ -379,7 +380,7 @@ void USB::Task( void )      //USB state machine
                         usb_error = USB_STATE_ADDRESSING;          //set address error
                         usb_task_state = USB_STATE_ERROR;
                     }
-                    break;  //break if address assigned or error occured during address assignment attempt                      
+                    break;  //break if address assigned or error occured during address assignment attempt
                 }
             }//for( i = 1; i < USB_NUMDEVICES; i++
             if( usb_task_state == USB_STATE_ADDRESSING ) {     //no vacant place in devtable
@@ -394,5 +395,5 @@ void USB::Task( void )      //USB state machine
         case USB_STATE_ERROR:
             break;
     }// switch( usb_task_state
-}    
-  
+}
+
