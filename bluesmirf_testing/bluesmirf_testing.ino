@@ -2,12 +2,12 @@ int ledpin = 13;
 
 void setup() {
   pinMode(ledpin, OUTPUT);
-  Serial.begin(9600);
+  Serial.begin(115200);
   digitalWrite(ledpin, HIGH);
   delay(5000);
   Serial.write("$$$");
+  Serial.write("I\n");
 }
-
 
 void loop() {
   char val = 0;
@@ -15,8 +15,8 @@ void loop() {
     val = Serial.read();
   }
 
-  if (val == 'C') {
-    //digitalWrite(ledpin, LOW);
+  if (val == ',') {
+    digitalWrite(ledpin, LOW);
   }
 
   delay(100);
