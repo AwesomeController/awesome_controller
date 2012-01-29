@@ -15,10 +15,17 @@ def find_serial_interface():
             return port[0]
     return None
 
-def connect_to_serial(serial_interface):
-    connection = serial.Serial(serial_interface, 115200, timeout=1000)
-    print 'Connected.'
-    return connection
+def connect_to_serial(serial_interface, tries_remaining=5):
+    try:
+        connection = serial.Serial(serial_interface, 115200, timeout=10, writeTimeout=10)
+        print 'Connected.'
+        return connection
+    except serial.serialutil.SerialException:
+        tries_remaining -= 1
+        if tries_remaining == 0:
+            raise
+        print 'Could not connect, retrying (%s retries remaining)' % tries_remaining
+        return connect_to_serial(serial_interface, tries_remaining)
 
 def send_command(serial_conn, command, include_newline=True):
     print 'Sending %s' % command
@@ -34,6 +41,21 @@ def send_command(serial_conn, command, include_newline=True):
         time.sleep(0.05)
     print ''
 
+def enter_command_mode(serial_conn):
+    send_command(serial_conn, "$$$", include_newline=False)
+
+def print_debug1(serial_conn):
+    send_command(serial_conn, "D")
+
+def print_debug2(serial_conn):
+    send_command(serial_conn, "E")
+
+def set_infinite_command_over_bluetooth(serial_conn):
+    send_command(serial_conn, "ST,255")
+
+def reset_rn42(serial_conn):
+    send_command(serial_conn, "R,1")
+
 def main(*args):
     serial_interface = find_serial_interface()
     if not serial_interface:
@@ -44,9 +66,22 @@ def main(*args):
 
     serial_conn = connect_to_serial(serial_interface)
 
-    send_command(serial_conn, "$$$", include_newline=False)
-    send_command(serial_conn, "D")
-    send_command(serial_conn, "E")
+    enter_command_mode(serial_conn)
+    print_debug1(serial_conn)
+    print_debug2(serial_conn)
+
+    set_infinite_command_over_bluetooth(serial_conn)
+    reset_rn42(serial_conn)
+    serial_conn.close()
+
+    time.sleep(1)
+
+    print 'Reconnecting to it...'
+    serial_conn = connect_to_serial(serial_interface)
+
+    enter_command_mode(serial_conn)
+    print_debug1(serial_conn)
+    print_debug2(serial_conn)
 
     serial_conn.close()
     return 0
