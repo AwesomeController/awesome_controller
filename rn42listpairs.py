@@ -1,17 +1,24 @@
 #!/usr/bin/python
 import sys
 import time
+from datetime import datetime, timedelta
 import serial
 from serial.tools import list_ports
 
-BLUESMIRF_INTERFACE_STRING = 'RN42'
+RN42_VIA_USB_STRING = 'usbserial'
+RN42_VIA_BLUETOOTH_STRING = 'RN42'
+BLUESMIRF_INTERFACE_STRING = RN42_VIA_BLUETOOTH_STRING
 
 # consider using list_ports.grep() instead
 def find_serial_interface():
     ports = list_ports.comports()
+    print 'Ports found:'
+    for port in ports:
+        print port[0]
+    print '----------'
     for port in ports:
         if port[0].count(BLUESMIRF_INTERFACE_STRING) == 1:
-            print 'Found serial interface: %s' % port[0]
+            print 'Using serial interface: %s' % port[0]
             return port[0]
     return None
 
@@ -56,10 +63,28 @@ def set_infinite_command_over_bluetooth(serial_conn):
 def reset_rn42(serial_conn):
     send_command(serial_conn, "R,1")
 
+def perform_inquiry(serial_conn, timeout):
+    send_command(serial_conn, "I,%s" % timeout)
+    begin_time = datetime.now()
+    print 'Waiting for timeout...'
+    max_timedelta = timedelta(seconds=timeout)
+    time_difference = datetime.now() - begin_time
+    while time_difference < max_timedelta:
+        if serial_conn.inWaiting() > 0:
+            sys.stdout.write(serial_conn.readline())
+        time.sleep(0.1)
+        time_difference = datetime.now() - begin_time
+    print 'Timed out'
+    time.sleep(2)
+    if serial_conn.inWaiting() > 0:
+        sys.stdout.write(serial_conn.readline())
+    else:
+        print 'no end result'
+
 def main(*args):
     serial_interface = find_serial_interface()
     if not serial_interface:
-        print 'USB port not found, exiting'
+        print 'Serial interface not found, exiting'
         return 1
 
     print 'Connecting to it...'
@@ -83,6 +108,11 @@ def main(*args):
     print_debug1(serial_conn)
     print_debug2(serial_conn)
 
+    time.sleep(10)
+
+    perform_inquiry(serial_conn, timeout=10)
+
+    send_command(serial_conn, "---")
     serial_conn.close()
     return 0
 
