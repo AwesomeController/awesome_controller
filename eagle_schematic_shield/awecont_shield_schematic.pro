@@ -2,8 +2,8 @@ EAGLE AutoRouter Statistics:
 
 Job           : D:/Users/hj497/Documents/git/awesome_controller/eagle_schematic/awecont_shield_schematic.brd
 
-Start at      : 17:04:52 (3/3/2012)
-End at        : 17:04:52 (3/3/2012)
+Start at      : 17:24:41 (3/3/2012)
+End at        : 17:24:41 (3/3/2012)
 Elapsed time  : 00:00:00
 
 Signals       :    32   RoutingGrid: 50 mil  Layers: 2
