@@ -238,28 +238,28 @@ void N64::init() {
 }
 
 void N64::commandForWiiController(unsigned char command[], WiiController &controller) {
-  command[0] = 0x00;
-  command[1] = 0x00;
-  command[2] = 0x00;
-  command[3] = 0x00;
+    command[0] = 0x00;
+    command[1] = 0x00;
+    command[2] = 0x00;
+    command[3] = 0x00;
 
-  if (controller.buttons[WII_REMOTE_2] || controller.classicButtons.A)        command[0] += N64_BUTTON_A_MASK;
-  if (controller.buttons[WII_REMOTE_1] || controller.classicButtons.B)        command[0] += N64_BUTTON_B_MASK;
-  if (controller.buttons[WII_REMOTE_B] || controller.classicButtons.ZL || controller.classicButtons.ZR) command[0] += N64_BUTTON_Z_MASK;
-  if (controller.buttons[WII_REMOTE_PLUS] || controller.classicButtons.Plus)  command[0] += N64_BUTTON_START_MASK;
-  if (controller.buttons[WII_REMOTE_UP])    command[0] += N64_BUTTON_UP_MASK;
-  if (controller.buttons[WII_REMOTE_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
-  if (controller.buttons[WII_REMOTE_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
-  if (controller.buttons[WII_REMOTE_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
+    if (controller.buttons[WII_REMOTE_2] || controller.classicButtons.A)        command[0] += N64_BUTTON_A_MASK;
+    if (controller.buttons[WII_REMOTE_1] || controller.classicButtons.B)        command[0] += N64_BUTTON_B_MASK;
+    if (controller.buttons[WII_REMOTE_B] || controller.classicButtons.ZL || controller.classicButtons.ZR) command[0] += N64_BUTTON_Z_MASK;
+    if (controller.buttons[WII_REMOTE_PLUS] || controller.classicButtons.Plus)  command[0] += N64_BUTTON_START_MASK;
+    if (controller.buttons[WII_REMOTE_UP])    command[0] += N64_BUTTON_UP_MASK;
+    if (controller.buttons[WII_REMOTE_DOWN])  command[0] += N64_BUTTON_DOWN_MASK;
+    if (controller.buttons[WII_REMOTE_LEFT])  command[0] += N64_BUTTON_LEFT_MASK;
+    if (controller.buttons[WII_REMOTE_RIGHT]) command[0] += N64_BUTTON_RIGHT_MASK;
 
-  if (controller.classicButtons.L > 8 || controller.classicButtons.LClick) command[1] += 0x20;
-  if (controller.classicButtons.R > 8 || controller.classicButtons.RClick) command[1] += 0x10;
+    if (controller.classicButtons.L > 8 || controller.classicButtons.LClick) command[1] += 0x20;
+    if (controller.classicButtons.R > 8 || controller.classicButtons.RClick) command[1] += 0x10;
 
-  if (controller.classicButtons.RightStickY > 24) command[1] += 0x08;
-  if (controller.classicButtons.RightStickY < 8) command[1] += 0x04;
-  if (controller.classicButtons.RightStickX < 8)  command[1] += 0x02;
-  if (controller.classicButtons.RightStickX > 24) command[1] += 0x01;
+    if (controller.classicButtons.RightStickY > 24) command[1] += 0x08;
+    if (controller.classicButtons.RightStickY < 8) command[1] += 0x04;
+    if (controller.classicButtons.RightStickX < 8)  command[1] += 0x02;
+    if (controller.classicButtons.RightStickX > 24) command[1] += 0x01;
 
-  command[2] += controller.classicButtons.LeftStickX * 4 - 128;
-  command[3] += controller.classicButtons.LeftStickY * 4 - 128;
+    command[2] += controller.classicButtons.LeftStickX * 4 - 128;
+    command[3] += controller.classicButtons.LeftStickY * 4 - 128;
 }
