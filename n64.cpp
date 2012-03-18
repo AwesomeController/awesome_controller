@@ -1,10 +1,12 @@
 #include <SPI.h>
 #include <Arduino.h>
 #include <avr/interrupt.h>
+#include "defs.h"
 #include "n64.h"
 #include "WiiController.h"
 
 extern WiiController wiiController;
+extern int currentlyConnectedSystem;
 unsigned char N64RawCommandPacket[9]; // 1 received bit per byte
 unsigned char command[] = { 0x00, 0x00, 0x00, 0x00 };
 

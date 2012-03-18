@@ -1,22 +1,15 @@
 #include <SPI.h>
+#include "defs.h"
 #include "ps3_usb.h"
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
 #include "n64.h"
 
-#define SYSTEM_NONE 0
-#define SYSTEM_NES  1
-#define SYSTEM_SNES 2
-#define SYSTEM_N64  3
-
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
 
-int currentlyConnectedSystem = SYSTEM_N64;
-int secondSystem = SYSTEM_NONE; // for debugging
-int thirdSystem = SYSTEM_N64;   // for debugging
-bool firstTime = true;          // for debugging
+int currentlyConnectedSystem = SYSTEM_NONE;
 
 volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
@@ -35,6 +28,7 @@ void setup()
     initBluetoothUsbHostHandler();
 
     systemUp(currentlyConnectedSystem);
+    pinMode(4, INPUT); // debugging N64 toggle
 }
 
 void initPS3Controller()
@@ -49,11 +43,16 @@ void initBluetoothUsbHostHandler()
 }
 
 
+// TODO: this is what Kyle will figure out based on the analog
+// value (resistance)
 int pollConnectedSystem()
 {
-    // TODO: this is what Kyle will figure out based on the analog
-    // value (resistance)
-    return secondSystem;
+    // debugging: toggle N64 being connected with a wire connected to power
+    if (digitalRead(4) == HIGH) {
+        return SYSTEM_N64;
+    } else {
+        return SYSTEM_NONE;
+    }
 }
 
 // Given a system, perform any teardown of pins, etc. when we
@@ -90,30 +89,24 @@ void systemUp(int system)
 
 void seeIfSystemChanged()
 {
-    int polledSystemConnection;
-    if (firstTime) {
-        polledSystemConnection = pollConnectedSystem();
-        firstTime = false;
-    } else {
-        polledSystemConnection = thirdSystem;
-    }
+    int polledSystemConnection = pollConnectedSystem();
 
+    // did we change systems?
     if (currentlyConnectedSystem != polledSystemConnection) {
-        // if in here, we changed systems
-
-        // do the down action for the previous system
         systemDown(currentlyConnectedSystem);
-
         currentlyConnectedSystem = polledSystemConnection;
-
-        // do the up action for the new system
         systemUp(currentlyConnectedSystem);
     }
 }
 
 void loop()
 {
-    seeIfSystemChanged();
+    buttonStatePrintCounter++;
+    if (buttonStatePrintCounter > 250) {
+        //wiiController.printButtonStates();
+        buttonStatePrintCounter = 0;
+        seeIfSystemChanged();
+    }
     handleButtons();
 }
 
@@ -126,13 +119,6 @@ void handleButtons()
     // eventually: for each wiimote, read their state and store.
     // right now only works for the one controller that is plugged in
     bluetoothUsbHostHandler.task(&readButtons);
-
-    buttonStatePrintCounter++;
-
-    if (buttonStatePrintCounter > 250) {
-        //wiiController.printButtonStates();
-        buttonStatePrintCounter = 0;
-    }
 }
 
 void readButtons(void)
