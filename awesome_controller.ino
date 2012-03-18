@@ -12,7 +12,8 @@
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
-int currentlyConnectedSystem = SYSTEM_NONE;
+int currentlyConnectedSystem = SYSTEM_N64;
+int secondSystem = SYSTEM_NONE; // for debugging
 
 volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
@@ -25,16 +26,18 @@ N64 n64system;
 void setup()
 {
     Serial.begin(9600);
+    systemUp(currentlyConnectedSystem);
 }
 
-void initPS3Controller() {
-  PS3Game.init();
+void initPS3Controller()
+{
+    PS3Game.init();
 }
 
 void initBluetoothUsbHostHandler()
 {
-  bluetoothUsbHostHandler.init(wiiController);
-  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
+    bluetoothUsbHostHandler.init(wiiController);
+    bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
 
@@ -42,21 +45,16 @@ int pollConnectedSystem()
 {
     // TODO: this is what Kyle will figure out based on the analog
     // value (resistance)
-    return SYSTEM_N64;
+    return secondSystem;
 }
 
 // Given a system, perform any teardown of pins, etc. when we
 // disconnect its connector.
 void systemDown(int system)
 {
-    if (system == SYSTEM_NONE) {
-        return;
-    }
-
-    if (system == SYSTEM_NES || system == SYSTEM_SNES) {
-    }
-
-    if (system == SYSTEM_N64) {
+    if (system != SYSTEM_NONE) {
+        detachInterrupt(0);
+        detachInterrupt(1);
     }
 }
 
@@ -66,9 +64,7 @@ void systemUp(int system)
 {
     if (system == SYSTEM_NONE) {
         return;
-    }
-
-    if (system == SYSTEM_NES || system == SYSTEM_SNES) {
+    } else if (system == SYSTEM_NES || system == SYSTEM_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
 
@@ -83,9 +79,7 @@ void systemUp(int system)
         SPI.begin();
         initPS3Controller();
         initBluetoothUsbHostHandler();
-    }
-
-    if (currentlyConnectedSystem == SYSTEM_N64) {
+    } else if (currentlyConnectedSystem == SYSTEM_N64) {
         SPI.begin();
         initPS3Controller();
         initBluetoothUsbHostHandler();
@@ -119,27 +113,15 @@ void loop()
 
 void handleButtons()
 {
-    if (currentlyConnectedSystem == SYSTEM_NES || currentlyConnectedSystem == SYSTEM_SNES) {
-        // eventually: for each controller, read their state and store.
-        // right now only works for the one controller that is plugged in
-        readControllerState();
+    // eventually: for each controller, read their state and store.
+    // right now only works for the one controller that is plugged in
+    readControllerState();
 
-        // eventually: for each wiimote, read their state and store.
-        // right now only works for the one controller that is plugged in
-        bluetoothUsbHostHandler.task(&readButtons);
+    // eventually: for each wiimote, read their state and store.
+    // right now only works for the one controller that is plugged in
+    bluetoothUsbHostHandler.task(&readButtons);
 
-        buttonStatePrintCounter++;
-    } else if (currentlyConnectedSystem == SYSTEM_N64) {
-        // eventually: for each controller, read their state and store.
-        // right now only works for the one controller that is plugged in
-        //readControllerState();
-
-        // eventually: for each wiimote, read their state and store.
-        // right now only works for the one controller that is plugged in
-        bluetoothUsbHostHandler.task(&readButtons);
-
-        buttonStatePrintCounter++;
-    }
+    buttonStatePrintCounter++;
 
     if (buttonStatePrintCounter > 250) {
         //wiiController.printButtonStates();
