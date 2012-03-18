@@ -12,8 +12,11 @@
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
+
 int currentlyConnectedSystem = SYSTEM_N64;
 int secondSystem = SYSTEM_NONE; // for debugging
+int thirdSystem = SYSTEM_N64;   // for debugging
+bool firstTime = true;          // for debugging
 
 volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
@@ -26,6 +29,11 @@ N64 n64system;
 void setup()
 {
     Serial.begin(9600);
+
+    SPI.begin();
+    initPS3Controller();
+    initBluetoothUsbHostHandler();
+
     systemUp(currentlyConnectedSystem);
 }
 
@@ -75,22 +83,20 @@ void systemUp(int system)
 
         // Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
-
-        SPI.begin();
-        initPS3Controller();
-        initBluetoothUsbHostHandler();
     } else if (currentlyConnectedSystem == SYSTEM_N64) {
-        SPI.begin();
-        initPS3Controller();
-        initBluetoothUsbHostHandler();
-
         n64system.init();
     }
 }
 
 void seeIfSystemChanged()
 {
-    int polledSystemConnection = pollConnectedSystem();
+    int polledSystemConnection;
+    if (firstTime) {
+        polledSystemConnection = pollConnectedSystem();
+        firstTime = false;
+    } else {
+        polledSystemConnection = thirdSystem;
+    }
 
     if (currentlyConnectedSystem != polledSystemConnection) {
         // if in here, we changed systems
