@@ -4,14 +4,15 @@
 #include "BluetoothUsbHostHandler.h"
 #include "n64.h"
 
-#define CONSOLE_NES  1
-#define CONSOLE_SNES 2
-#define CONSOLE_N64  3
-#define CONSOLE_CHOICE CONSOLE_N64
+#define SYSTEM_NONE 0
+#define SYSTEM_NES  1
+#define SYSTEM_SNES 2
+#define SYSTEM_N64  3
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
+int currentlyConnectedSystem = SYSTEM_NONE;
 
 volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
@@ -24,22 +25,67 @@ N64 n64system;
 void setup()
 {
     Serial.begin(9600);
-    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
+}
+
+void initPS3Controller() {
+  PS3Game.init();
+}
+
+void initBluetoothUsbHostHandler()
+{
+  bluetoothUsbHostHandler.init(wiiController);
+  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
+}
+
+
+int pollConnectedSystem()
+{
+    // TODO: this is what Kyle will figure out based on the analog
+    // value (resistance)
+    return SYSTEM_N64;
+}
+
+// Given a system, perform any teardown of pins, etc. when we
+// disconnect its connector.
+void systemDown(int system)
+{
+    if (system == SYSTEM_NONE) {
+        return;
+    }
+
+    if (system == SYSTEM_NES || system == SYSTEM_SNES) {
+    }
+
+    if (system == SYSTEM_N64) {
+    }
+}
+
+// Given a system, perform any setup of pins, etc. when we
+// connect its connector.
+void systemUp(int system)
+{
+    if (system == SYSTEM_NONE) {
+        return;
+    }
+
+    if (system == SYSTEM_NES || system == SYSTEM_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
 
-        // Setup clock latch and data pins for SNES/NES
+        // Setup clock, latch, and data pins for SNES/NES
         pinMode(CLOCK_PIN, INPUT);
         pinMode(LATCH_PIN, INPUT);
         pinMode(DATA_PIN, OUTPUT);
 
-        //Initialize clock pin to 5 volts
+        // Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
-        SPI.begin();
 
+        SPI.begin();
         initPS3Controller();
         initBluetoothUsbHostHandler();
-    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+    }
+
+    if (currentlyConnectedSystem == SYSTEM_N64) {
         SPI.begin();
         initPS3Controller();
         initBluetoothUsbHostHandler();
@@ -48,18 +94,32 @@ void setup()
     }
 }
 
-void initPS3Controller() {
-  PS3Game.init();
+void seeIfSystemChanged()
+{
+    int polledSystemConnection = pollConnectedSystem();
+
+    if (currentlyConnectedSystem != polledSystemConnection) {
+        // if in here, we changed systems
+
+        // do the down action for the previous system
+        systemDown(currentlyConnectedSystem);
+
+        currentlyConnectedSystem = polledSystemConnection;
+
+        // do the up action for the new system
+        systemUp(currentlyConnectedSystem);
+    }
 }
 
-void initBluetoothUsbHostHandler() {
-  bluetoothUsbHostHandler.init(wiiController);
-  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
+void loop()
+{
+    seeIfSystemChanged();
+    handleButtons();
 }
 
-void loop() {
-    //Serial.println("at top of loop");
-    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
+void handleButtons()
+{
+    if (currentlyConnectedSystem == SYSTEM_NES || currentlyConnectedSystem == SYSTEM_SNES) {
         // eventually: for each controller, read their state and store.
         // right now only works for the one controller that is plugged in
         readControllerState();
@@ -69,11 +129,7 @@ void loop() {
         bluetoothUsbHostHandler.task(&readButtons);
 
         buttonStatePrintCounter++;
-        if (buttonStatePrintCounter > 250) {
-            wiiController.printButtonStates();
-            buttonStatePrintCounter = 0;
-        }
-    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
+    } else if (currentlyConnectedSystem == SYSTEM_N64) {
         // eventually: for each controller, read their state and store.
         // right now only works for the one controller that is plugged in
         //readControllerState();
@@ -83,14 +139,16 @@ void loop() {
         bluetoothUsbHostHandler.task(&readButtons);
 
         buttonStatePrintCounter++;
-        if (buttonStatePrintCounter > 250) {
-            //wiiController.printButtonStates();
-            buttonStatePrintCounter = 0;
-        }
+    }
+
+    if (buttonStatePrintCounter > 250) {
+        //wiiController.printButtonStates();
+        buttonStatePrintCounter = 0;
     }
 }
 
-void readButtons(void) {
+void readButtons(void)
+{
     wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
     wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
     wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_B);
@@ -113,7 +171,8 @@ void readButtons(void) {
     }
 }
 
-void readControllerState() {
+void readControllerState()
+{
     PS3Game.task();
     if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
         if (PS3Game.buttonChanged()){
@@ -137,16 +196,19 @@ void readControllerState() {
     }
 }
 
-void snesKeyDown() {
-    if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-        RED_LED_ON;
-    } else {
-        RED_LED_OFF;
-    }
+void snesKeyDown()
+{
+    // debugging code
+    //if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
+    //    RED_LED_ON;
+    //} else {
+    //    RED_LED_OFF;
+    //}
     buttonCyclesSinceLatch++;
 }
 
-void resetButtons() {
+void resetButtons()
+{
     buttonCyclesSinceLatch = 0;
     snesKeyDown();
 }
