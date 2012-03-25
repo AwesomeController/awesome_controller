@@ -1,17 +1,15 @@
 #include <SPI.h>
+#include "defs.h"
 #include "ps3_usb.h"
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
 #include "n64.h"
 
-#define CONSOLE_NES  1
-#define CONSOLE_SNES 2
-#define CONSOLE_N64  3
-#define CONSOLE_CHOICE CONSOLE_N64
-
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
+
+int currentlyConnectedSystem = SYSTEM_NONE;
 
 volatile int buttonCyclesSinceLatch;
 int buttonStatePrintCounter = 0;
@@ -24,73 +22,107 @@ N64 n64system;
 void setup()
 {
     Serial.begin(9600);
-    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
+
+    SPI.begin();
+    initPS3Controller();
+    initBluetoothUsbHostHandler();
+
+    systemUp(currentlyConnectedSystem);
+    pinMode(4, INPUT); // debugging N64 toggle
+}
+
+void initPS3Controller()
+{
+    PS3Game.init();
+}
+
+void initBluetoothUsbHostHandler()
+{
+    bluetoothUsbHostHandler.init(wiiController);
+    bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
+}
+
+
+// TODO: this is what Kyle will figure out based on the analog
+// value (resistance)
+int pollConnectedSystem()
+{
+    // debugging: toggle N64 being connected with a wire connected to power
+    if (digitalRead(4) == HIGH) {
+        return SYSTEM_N64;
+    } else {
+        return SYSTEM_NONE;
+    }
+}
+
+// Given a system, perform any teardown of pins, etc. when we
+// disconnect its connector.
+void systemDown(int system)
+{
+    if (system != SYSTEM_NONE) {
+        detachInterrupt(0);
+        detachInterrupt(1);
+    }
+}
+
+// Given a system, perform any setup of pins, etc. when we
+// connect its connector.
+void systemUp(int system)
+{
+    if (system == SYSTEM_NONE) {
+        return;
+    } else if (system == SYSTEM_NES || system == SYSTEM_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
 
-        // Setup clock latch and data pins for SNES/NES
+        // Setup clock, latch, and data pins for SNES/NES
         pinMode(CLOCK_PIN, INPUT);
         pinMode(LATCH_PIN, INPUT);
         pinMode(DATA_PIN, OUTPUT);
 
-        //Initialize clock pin to 5 volts
+        // Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
-        SPI.begin();
-
-        initPS3Controller();
-        initBluetoothUsbHostHandler();
-    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
-        SPI.begin();
-        initPS3Controller();
-        initBluetoothUsbHostHandler();
-
+    } else if (currentlyConnectedSystem == SYSTEM_N64) {
         n64system.init();
     }
 }
 
-void initPS3Controller() {
-  PS3Game.init();
-}
+void seeIfSystemChanged()
+{
+    int polledSystemConnection = pollConnectedSystem();
 
-void initBluetoothUsbHostHandler() {
-  bluetoothUsbHostHandler.init(wiiController);
-  bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
-}
-
-void loop() {
-    //Serial.println("at top of loop");
-    if (CONSOLE_CHOICE == CONSOLE_NES || CONSOLE_CHOICE == CONSOLE_SNES) {
-        // eventually: for each controller, read their state and store.
-        // right now only works for the one controller that is plugged in
-        readControllerState();
-
-        // eventually: for each wiimote, read their state and store.
-        // right now only works for the one controller that is plugged in
-        bluetoothUsbHostHandler.task(&readButtons);
-
-        buttonStatePrintCounter++;
-        if (buttonStatePrintCounter > 250) {
-            wiiController.printButtonStates();
-            buttonStatePrintCounter = 0;
-        }
-    } else if (CONSOLE_CHOICE == CONSOLE_N64) {
-        // eventually: for each controller, read their state and store.
-        // right now only works for the one controller that is plugged in
-        //readControllerState();
-
-        // eventually: for each wiimote, read their state and store.
-        // right now only works for the one controller that is plugged in
-        bluetoothUsbHostHandler.task(&readButtons);
-
-        buttonStatePrintCounter++;
-        if (buttonStatePrintCounter > 250) {
-            //wiiController.printButtonStates();
-            buttonStatePrintCounter = 0;
-        }
+    // did we change systems?
+    if (currentlyConnectedSystem != polledSystemConnection) {
+        systemDown(currentlyConnectedSystem);
+        currentlyConnectedSystem = polledSystemConnection;
+        systemUp(currentlyConnectedSystem);
     }
 }
 
-void readButtons(void) {
+void loop()
+{
+    buttonStatePrintCounter++;
+    if (buttonStatePrintCounter > 250) {
+        //wiiController.printButtonStates();
+        buttonStatePrintCounter = 0;
+        seeIfSystemChanged();
+    }
+    handleButtons();
+}
+
+void handleButtons()
+{
+    // eventually: for each controller, read their state and store.
+    // right now only works for the one controller that is plugged in
+    readControllerState();
+
+    // eventually: for each wiimote, read their state and store.
+    // right now only works for the one controller that is plugged in
+    bluetoothUsbHostHandler.task(&readButtons);
+}
+
+void readButtons(void)
+{
     wiiController.buttons[0] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_TWO);
     wiiController.buttons[1] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_ONE);
     wiiController.buttons[2] = bluetoothUsbHostHandler.buttonPressed(WIIREMOTE_B);
@@ -113,7 +145,8 @@ void readButtons(void) {
     }
 }
 
-void readControllerState() {
+void readControllerState()
+{
     PS3Game.task();
     if ((PS3Game.statConnected()) && (PS3Game.statReportReceived())){ // report received ?
         if (PS3Game.buttonChanged()){
@@ -137,16 +170,19 @@ void readControllerState() {
     }
 }
 
-void snesKeyDown() {
-    if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-        RED_LED_ON;
-    } else {
-        RED_LED_OFF;
-    }
+void snesKeyDown()
+{
+    // debugging code
+    //if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
+    //    RED_LED_ON;
+    //} else {
+    //    RED_LED_OFF;
+    //}
     buttonCyclesSinceLatch++;
 }
 
-void resetButtons() {
+void resetButtons()
+{
     buttonCyclesSinceLatch = 0;
     snesKeyDown();
 }
