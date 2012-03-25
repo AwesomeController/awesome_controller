@@ -9,6 +9,8 @@ int LATCH_PIN = 2;
 int CLOCK_PIN = 3;
 int DATA_PIN = 4;
 
+int SYSTEM_DETECT_PIN = A3;
+
 int currentlyConnectedSystem = SYSTEM_NONE;
 
 volatile int buttonCyclesSinceLatch;
@@ -29,6 +31,7 @@ void setup()
 
     systemUp(currentlyConnectedSystem);
     pinMode(4, INPUT); // debugging N64 toggle
+    pinMode(SYSTEM_DETECT_PIN, INPUT);
 }
 
 void initPS3Controller()
@@ -42,17 +45,28 @@ void initBluetoothUsbHostHandler()
     bluetoothUsbHostHandler.setBDAddressMode(BD_ADDR_INQUIRY);
 }
 
+bool near(int value, int pivot) {
+    int range = 5;
+
+    return value > (pivot - range) && value < (pivot + range);
+}
 
 // TODO: this is what Kyle will figure out based on the analog
 // value (resistance)
 int pollConnectedSystem()
 {
-    // debugging: toggle N64 being connected with a wire connected to power
-    if (digitalRead(4) == HIGH) {
-        return SYSTEM_N64;
-    } else {
-        return SYSTEM_NONE;
+    int system = SYSTEM_NONE;
+
+    int detectVoltage = analogRead(SYSTEM_DETECT_PIN);
+    if (near(detectVoltage, 8)) {
+        system = SYSTEM_NES;
+    } else if (near(detectVoltage, 43)) {
+        system = SYSTEM_SNES;
+    } else if (near(detectVoltage, 90)) {
+        system = SYSTEM_N64;
     }
+
+    return system;
 }
 
 // Given a system, perform any teardown of pins, etc. when we
