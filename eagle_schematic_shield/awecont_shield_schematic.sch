@@ -2287,6 +2287,11 @@ We've spent an enormous amount of time creating and checking these footprints an
 <wire x1="87.63" y1="43.18" x2="116.84" y2="43.18" width="0.1524" layer="91"/>
 <label x="105.41" y="43.18" size="1.778" layer="95"/>
 </segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="A2"/>
+<wire x1="30.48" y1="25.4" x2="17.78" y2="25.4" width="0.1524" layer="91"/>
+<label x="17.78" y="25.4" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="N$12" class="0">
 <segment>
@@ -2333,8 +2338,8 @@ We've spent an enormous amount of time creating and checking these footprints an
 </segment>
 <segment>
 <pinref part="U1" gate="G$1" pin="A1"/>
-<wire x1="30.48" y1="27.94" x2="19.05" y2="27.94" width="0.1524" layer="91"/>
-<label x="20.32" y="27.94" size="1.778" layer="95"/>
+<wire x1="30.48" y1="27.94" x2="17.78" y2="27.94" width="0.1524" layer="91"/>
+<label x="17.78" y="27.94" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="PIO9" class="0">
@@ -2452,13 +2457,6 @@ We've spent an enormous amount of time creating and checking these footprints an
 <wire x1="55.88" y1="12.7" x2="86.36" y2="12.7" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$6" class="0">
-<segment>
-<pinref part="U1" gate="G$1" pin="D7"/>
-<pinref part="U$1" gate="G$1" pin="6"/>
-<wire x1="55.88" y1="10.16" x2="86.36" y2="10.16" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$7" class="0">
 <segment>
 <pinref part="NES" gate="G$1" pin="6"/>
@@ -2559,14 +2557,19 @@ We've spent an enormous amount of time creating and checking these footprints an
 <segment>
 <pinref part="R10" gate="G$1" pin="1"/>
 <wire x1="17.78" y1="58.42" x2="10.16" y2="58.42" width="0.1524" layer="91"/>
-<label x="2.54" y="58.42" size="1.778" layer="95"/>
+<label x="7.62" y="58.42" size="1.778" layer="95"/>
+<wire x1="10.16" y1="58.42" x2="7.62" y2="58.42" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="A2"/>
-<wire x1="30.48" y1="25.4" x2="19.05" y2="25.4" width="0.1524" layer="91"/>
-<label x="20.32" y="25.4" size="1.778" layer="95"/>
-<wire x1="30.48" y1="22.86" x2="19.05" y2="22.86" width="0.1524" layer="91"/>
-<label x="20.32" y="22.86" size="1.778" layer="95"/>
+<pinref part="U$1" gate="G$1" pin="6"/>
+<wire x1="86.36" y1="10.16" x2="76.2" y2="10.16" width="0.1524" layer="91"/>
+<label x="76.2" y="10.16" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="U1" gate="G$1" pin="A3"/>
+<wire x1="30.48" y1="22.86" x2="20.32" y2="22.86" width="0.1524" layer="91"/>
+<wire x1="20.32" y1="22.86" x2="17.78" y2="22.86" width="0.1524" layer="91"/>
+<label x="17.78" y="22.86" size="1.778" layer="95"/>
 </segment>
 </net>
 </nets>
