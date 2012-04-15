@@ -359,8 +359,12 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
                     buf[5 + 9 * num_devices] == 0x00) {
                     for (uint8_t i = 0; i < 6; i++) {
                         wiiremote_bdaddr_[5-i] = (uint8_t) buf[3 + 6 * (num_devices - 1) + i];
-                        //Serial.print(wiiremote_bdaddr_[5-i], HEX);
+                        // print out the wiimote address (for debugging)
+                        //Serial.print("0x");
+                        //Serial.print(wiiremote_bdaddr_[i], HEX);
+                        //Serial.print(" ");
                     }
+                    //Serial.println();
                 }
             }
 
@@ -882,12 +886,12 @@ void BluetoothUsbHostHandler::readReport(uint8_t *data) {
                     if (data[13] == 0x00 && data[14] == 0xfa) {
                         // the six bytes that identify the extension should be:
                         // classic controller: 0000 A420 0101
-                        Serial.println(data[15], HEX);
-                        Serial.println(data[16], HEX);
-                        Serial.println(data[17], HEX);
-                        Serial.println(data[18], HEX);
-                        Serial.println(data[19], HEX);
-                        Serial.println(data[20], HEX);
+                        //Serial.println(data[15], HEX);
+                        //Serial.println(data[16], HEX);
+                        //Serial.println(data[17], HEX);
+                        //Serial.println(data[18], HEX);
+                        //Serial.println(data[19], HEX);
+                        //Serial.println(data[20], HEX);
                     }
                     waiting_for_ext_id_ = false;
                 }
@@ -1088,12 +1092,12 @@ uint8_t BluetoothUsbHostHandler::readData(bool eeprom, uint32_t offset, uint16_t
     hid_buf[5] = (uint8_t) ((size & 0xff00) >> 8);
     hid_buf[6] = (uint8_t) ((size & 0x00ff));
 
-    Serial.println("reading...");
+    //Serial.println("reading...");
     for (int i = 0; i < 7; i++) {
-        Serial.print(hid_buf[i], HEX);
-        Serial.print(" ");
+        //Serial.print(hid_buf[i], HEX);
+        //Serial.print(" ");
     }
-    Serial.println("");
+    //Serial.println("");
 
     //hid_flags_ &= ~HID_FLAG_COMMAND_SUCCESS;
     hid_flags_ &= ~HID_FLAG_READ_CALIBRATION;

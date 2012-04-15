@@ -348,6 +348,8 @@ class BluetoothUsbHostHandler {
     bool buttonClicked(uint16_t/*eWiiRemoteButtons*/);
 
     Report_t Report;
+    uint8_t hci_connect(uint8_t *);
+    uint8_t hci_inquiry(void);
 
   private:
     void initBTController(void);
@@ -355,9 +357,7 @@ class BluetoothUsbHostHandler {
     void HCI_task(void);
     void HCI_event_task(void);
     uint8_t hci_reset(void);
-    uint8_t hci_inquiry(void);
     uint8_t hci_inquiry_cancel(void);
-    uint8_t hci_connect(uint8_t *);
     uint8_t HCI_Command(uint16_t, uint8_t *);
 
     void L2CAP_task(void);
