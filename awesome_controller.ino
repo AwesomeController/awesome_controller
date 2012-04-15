@@ -73,6 +73,7 @@ int pollConnectedSystem()
 // disconnect its connector.
 void systemDown(int system)
 {
+    Serial.println("in systemDown");
     if (system != SYSTEM_NONE) {
         detachInterrupt(0);
         detachInterrupt(1);
@@ -85,7 +86,9 @@ void systemUp(int system)
 {
     if (system == SYSTEM_NONE) {
         return;
-    } else if (system == SYSTEM_NES || system == SYSTEM_SNES) {
+    }
+
+    if (system == SYSTEM_NES || system == SYSTEM_SNES) {
         attachInterrupt(0, resetButtons, RISING);
         attachInterrupt(1, snesKeyDown, RISING);
 
@@ -96,7 +99,9 @@ void systemUp(int system)
 
         // Initialize clock pin to 5 volts
         digitalWrite(CLOCK_PIN, HIGH);
-    } else if (currentlyConnectedSystem == SYSTEM_N64) {
+    }
+
+    if (system == SYSTEM_N64) {
         n64system.init();
     }
 }
@@ -117,7 +122,7 @@ void loop()
 {
     buttonStatePrintCounter++;
     if (buttonStatePrintCounter > 250) {
-        //wiiController.printButtonStates();
+        wiiController.printButtonStates();
         buttonStatePrintCounter = 0;
         seeIfSystemChanged();
     }
@@ -186,12 +191,6 @@ void readControllerState()
 
 void snesKeyDown()
 {
-    // debugging code
-    //if (wiiController.buttons[buttonCyclesSinceLatch] == 0) {
-    //    RED_LED_ON;
-    //} else {
-    //    RED_LED_OFF;
-    //}
     buttonCyclesSinceLatch++;
 }
 

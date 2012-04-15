@@ -348,16 +348,24 @@ void BluetoothUsbHostHandler::HCI_event_task(void) {
             hci_event_flag_ |= HCI_FLAG_COMMAND_COMPLETE;
             break;
 
-          case HCI_EVENT_INQUIRY_RESULT:
+          case HCI_EVENT_INQUIRY_RESULT: {
             hci_event_flag_ |= HCI_FLAG_INQUIRY_RESULT;
 
-            /* assume that Num_Responses is 1 */
-            //Serial.print("\r\nFound WiiRemote BD_ADDR:\t");
-            for (uint8_t i = 0; i < 6; i++) {
-                wiiremote_bdaddr_[5-i] = (uint8_t) buf[3+i];
-                //Serial.print(wiiremote_bdaddr_[5-i], HEX);
+            int num_devices = (uint8_t) buf[2];
+            for (uint8_t deviceNum = 0; deviceNum < num_devices; deviceNum++) {
+                // only connect to wiimote devices (based on device class)
+                if (buf[3 + 9 * num_devices] == 0x04 &&
+                    buf[4 + 9 * num_devices] == 0x25 &&
+                    buf[5 + 9 * num_devices] == 0x00) {
+                    for (uint8_t i = 0; i < 6; i++) {
+                        wiiremote_bdaddr_[5-i] = (uint8_t) buf[3 + 6 * (num_devices - 1) + i];
+                        //Serial.print(wiiremote_bdaddr_[5-i], HEX);
+                    }
+                }
             }
+
             break;
+          }
 
           case HCI_EVENT_INQUIRY_COMPLETE:
             hci_event_flag_ |= HCI_FLAG_INQUIRY_COMPLETE;
