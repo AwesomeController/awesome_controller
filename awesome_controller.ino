@@ -121,8 +121,9 @@ void seeIfSystemChanged()
 void loop()
 {
     buttonStatePrintCounter++;
-    if (buttonStatePrintCounter > 250) {
+    if (buttonStatePrintCounter > 50) {
         wiiController.printButtonStates();
+        Serial.flush();
         buttonStatePrintCounter = 0;
         seeIfSystemChanged();
     }
