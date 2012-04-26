@@ -1,3 +1,6 @@
 [submodule "libraries/wiiuse_arduino"]
 	path = libraries/wiiuse_arduino
 	url = git://github.com/AwesomeController/wiiuse-arduino.git
+[submodule "libraries/bluez_arduino"]
+	path = libraries/bluez_arduino
+	url = git://github.com/AwesomeController/bluez-arduino.git
