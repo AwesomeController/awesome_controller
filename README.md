@@ -10,4 +10,6 @@ The following instructions work for running the high-level
 tests on a Macbook Pro:
 
 * Dependencies
+  * Requires Ruby 1.9+
   * brew install cmake (linking failed for me, so I had to `brew link cmake` afterwards)
+  * gem install ffi
