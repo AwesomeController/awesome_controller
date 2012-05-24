@@ -23,3 +23,18 @@ task :build_wiiuse do
 
   Dir.chdir '../../..'
 end
+
+desc 'Copy all src files to ~/awesome_controller'
+task :copy_src do
+  require 'fileutils'
+
+  dest_dir = '~/awesome_controller'
+
+  puts `mkdir -p #{dest_dir}`
+
+  [['awesome_controller'], ['libraries', 'wiiuse_arduino', 'src']].each do |file_path_pieces|
+    Dir[File.join(file_path_pieces + ['*'])]
+      .grep(/\.(ino|h|c|)$/)
+      .map{ |f| `cp \`pwd\`/#{f} #{dest_dir}` }
+  end
+end

@@ -1,9 +1,11 @@
+
 #include <SPI.h>
 #include "defs.h"
 #include "ps3_usb.h"
 #include "WiiController.h"
 #include "BluetoothUsbHostHandler.h"
 #include "n64.h"
+#include "wiiuse.h"
 
 int LATCH_PIN = 2;
 int CLOCK_PIN = 3;

@@ -13,3 +13,6 @@ tests on a Macbook Pro:
   * Requires Ruby 1.9+
   * brew install cmake (linking failed for me, so I had to `brew link cmake` afterwards)
   * gem install ffi
+
+* Future Enhancements
+  * Test build scripts with Linux / Windows
