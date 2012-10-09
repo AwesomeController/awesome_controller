@@ -18,6 +18,11 @@ Running the code
 7. Load and run the code on your Arduino!
 8. The software should detect which game console it is connected to automatically, and you can hopefully begin playing!
 
+Hardware Schematics
+========
+
+In the "eagle" directory you will find files for use with EAGLE, a software suite for printed circuit board design.
+These are unfinished, but will be used if we have our own circuit boards printed.
 
 Running Tests
 =============
